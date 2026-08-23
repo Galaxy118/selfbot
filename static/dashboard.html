@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Selfbot Manager - Dashboard</title>
-    <link rel="stylesheet" href="/static/style.css?v=16">
+    <link rel="stylesheet" href="/static/style.css?v=17">
 </head>
 <body>
     <div class="container">
@@ -93,13 +93,13 @@
                     </div>
 
                     <div style="display: flex; gap: 0.5rem;">
-                        <select class="new-activity-type glass-input" style="width: 110px; padding: 0.5rem;">
+                        <select class="new-activity-type glass-input" style="min-width: 130px; padding: 0.5rem;">
                             <option value="0">Joue à</option>
                             <option value="2">Écoute</option>
                             <option value="3">Regarde</option>
                             <option value="5">Participe à</option>
                         </select>
-                        <input type="text" class="new-activity-name glass-input" placeholder="Ex: Spotify" style="flex-grow: 1; padding: 0.5rem;">
+                        <input type="text" class="new-activity-name glass-input" placeholder="Ex: Spotify" style="flex-grow: 1; padding: 0.5rem; min-width: 0;">
                         <button type="button" class="glass-button glass-button-primary add-activity-btn" style="padding: 0.5rem 1rem;">+</button>
                     </div>
                 </div>
@@ -137,6 +137,5 @@
         </div>
     </template>
 
-    <script src="/static/script.js?v=16"></script>
-</body>
+    <script src="/static/script.js?v=17"></script></body>
 </html>
