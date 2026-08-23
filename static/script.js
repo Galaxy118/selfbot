@@ -156,9 +156,13 @@ function renderTokens(tokens) {
             guildInput.disabled = !isActive;
             channelInput.disabled = !isActive;
             joinVoiceCheckbox.disabled = !isActive;
-            
             muteCheckbox.disabled = !(isActive && isVoice);
             deafCheckbox.disabled = !(isActive && isVoice);
+
+            // Toggle CSS classes for parent containers to ensure visual feedback
+            joinVoiceCheckbox.parentElement.classList.toggle('disabled-field', !isActive);
+            muteCheckbox.parentElement.classList.toggle('disabled-field', !(isActive && isVoice));
+            deafCheckbox.parentElement.classList.toggle('disabled-field', !(isActive && isVoice));
         };
 
         isActiveCheckbox.addEventListener('change', updateDisabledStates);
