@@ -92,6 +92,13 @@ def init_db():
     try:
         c.execute("ALTER TABLE tokens ADD COLUMN bot_username TEXT")
     except sqlite3.OperationalError:
+    try:
+        c.execute("ALTER TABLE tokens ADD COLUMN activities_json TEXT DEFAULT '[]'")
+    except sqlite3.OperationalError:
+        pass # Column exists
+    try:
+        c.execute("ALTER TABLE tokens ADD COLUMN rotation_interval INTEGER DEFAULT 30")
+    except sqlite3.OperationalError:
         pass # Column exists
     conn.commit()
     conn.close()
@@ -117,14 +124,16 @@ class DiscordManager:
             
         conn = sqlite3.connect(DB_PATH)
         c = conn.cursor()
-        c.execute("SELECT id, encrypted_token, status, guild_id, channel_id, self_mute, self_deaf, join_voice, is_active FROM tokens")
+        c.execute("SELECT id, encrypted_token, status, guild_id, channel_id, self_mute, self_deaf, join_voice, is_active, activities_json, rotation_interval FROM tokens")
         rows = c.fetchall()
         conn.close()
 
         for row in rows:
-            self.start_bot(row[0], row[1], row[2], row[3], row[4], row[5], row[6], row[7], row[8])
+            activities = json.loads(row[9]) if row[9] else []
+            rot_int = row[10] if row[10] else 30
+            self.start_bot(row[0], row[1], row[2], row[3], row[4], row[5], row[6], row[7], row[8], activities, rot_int)
 
-    def start_bot(self, token_id, encrypted_token, status, guild_id, channel_id, self_mute, self_deaf, join_voice, is_active):
+    def start_bot(self, token_id, encrypted_token, status, guild_id, channel_id, self_mute, self_deaf, join_voice, is_active, activities, rotation_interval):
         self.stop_bot(token_id)
         if not is_active or not is_global_active():
             return
@@ -137,7 +146,9 @@ class DiscordManager:
             "self_mute": bool(self_mute),
             "self_deaf": bool(self_deaf),
             "join_voice": bool(join_voice),
-            "is_active": bool(is_active)
+            "is_active": bool(is_active),
+            "activities": activities,
+            "rotation_interval": max(15, rotation_interval) # minimum 15 seconds
         }
         task = asyncio.create_task(self.run_bot(token_id))
         self.tasks[token_id] = task
@@ -149,16 +160,21 @@ class DiscordManager:
         if token_id in self.bot_configs:
             del self.bot_configs[token_id]
 
-    async def update_bot(self, token_id, encrypted_token, status, guild_id, channel_id, self_mute, self_deaf, join_voice, is_active):
-        if not is_active or not is_global_active():
+    async def update_bot(self, token_id, encrypted_token, status, guild_id, channel_id, self_mute, self_deaf, join_voice, is_active, activities, rotation_interval):
+        # Stop and restart completely if activities or interval changes to refresh the loop properly
+        old_config = self.bot_configs.get(token_id, {})
+        activities_changed = old_config.get("activities") != activities or old_config.get("rotation_interval") != rotation_interval
+        
+        if not is_active or not is_global_active() or activities_changed:
             self.stop_bot(token_id)
-            return
-            
-        if token_id not in self.tasks:
-            self.start_bot(token_id, encrypted_token, status, guild_id, channel_id, self_mute, self_deaf, join_voice, is_active)
+            if is_active and is_global_active():
+                self.start_bot(token_id, encrypted_token, status, guild_id, channel_id, self_mute, self_deaf, join_voice, is_active, activities, rotation_interval)
             return
 
-        old_config = self.bot_configs.get(token_id, {})
+        if token_id not in self.tasks:
+            self.start_bot(token_id, encrypted_token, status, guild_id, channel_id, self_mute, self_deaf, join_voice, is_active, activities, rotation_interval)
+            return
+
         self.bot_configs[token_id] = {
             "token": decrypt_token(encrypted_token),
             "status": status,
@@ -167,7 +183,9 @@ class DiscordManager:
             "self_mute": bool(self_mute),
             "self_deaf": bool(self_deaf),
             "join_voice": bool(join_voice),
-            "is_active": bool(is_active)
+            "is_active": bool(is_active),
+            "activities": old_config.get("activities", []),
+            "rotation_interval": old_config.get("rotation_interval", 30)
         }
 
         ws = self.ws_connections.get(token_id)
@@ -179,7 +197,7 @@ class DiscordManager:
                     "d": {
                         "status": status,
                         "since": 0,
-                        "activities": [],
+                        "activities": old_config.get("activities", [])[:1],
                         "afk": False
                     }
                 }))
@@ -242,6 +260,11 @@ class DiscordManager:
                     
                     hb_task = asyncio.create_task(heartbeat(ws, heartbeat_interval))
                     
+                    # Prepare first activity
+                    initial_activities = []
+                    if config.get("activities") and len(config["activities"]) > 0:
+                        initial_activities = [config["activities"][0]]
+
                     await ws.send(json.dumps({
                         "op": 2,
                         "d": {
@@ -253,10 +276,38 @@ class DiscordManager:
                             },
                             "presence": {
                                 "status": config["status"],
-                                "afk": False
+                                "afk": False,
+                                "activities": initial_activities
                             }
                         }
                     }))
+                    
+                    rotator_task = None
+                    if config.get("activities") and len(config["activities"]) > 1:
+                        async def activity_rotator(ws, interval, activities, status):
+                            try:
+                                idx = 0
+                                while True:
+                                    await asyncio.sleep(interval)
+                                    idx = (idx + 1) % len(activities)
+                                    await ws.send(json.dumps({
+                                        "op": 3,
+                                        "d": {
+                                            "status": status,
+                                            "since": 0,
+                                            "activities": [activities[idx]],
+                                            "afk": False
+                                        }
+                                    }))
+                            except asyncio.CancelledError:
+                                pass
+                                
+                        rotator_task = asyncio.create_task(activity_rotator(
+                            ws, 
+                            config["rotation_interval"], 
+                            config["activities"], 
+                            config["status"]
+                        ))
 
                     while True:
                         msg = await ws.recv()
@@ -296,10 +347,14 @@ class DiscordManager:
             except asyncio.CancelledError:
                 if 'hb_task' in locals():
                     hb_task.cancel()
+                if 'rotator_task' in locals() and rotator_task:
+                    rotator_task.cancel()
                 logger.info(f"[Bot {token_id}] Task cancelled, stopping...")
                 break
             except Exception as e:
                 logger.error(f"[Bot {token_id}] Disconnected: {e}. Reconnecting in 5s...")
+                if 'rotator_task' in locals() and rotator_task:
+                    rotator_task.cancel()
                 await asyncio.sleep(5)
 
 bot_manager = DiscordManager()
@@ -478,9 +533,9 @@ async def get_tokens(user: dict = Depends(get_current_user)):
     conn = sqlite3.connect(DB_PATH)
     c = conn.cursor()
     if user["is_admin"]:
-        c.execute("SELECT id, owner_id, status, guild_id, channel_id, self_mute, self_deaf, join_voice, is_active, bot_username FROM tokens")
+        c.execute("SELECT id, owner_id, status, guild_id, channel_id, self_mute, self_deaf, join_voice, is_active, bot_username, activities_json, rotation_interval FROM tokens")
     else:
-        c.execute("SELECT id, owner_id, status, guild_id, channel_id, self_mute, self_deaf, join_voice, is_active, bot_username FROM tokens WHERE owner_id = ?", (user["id"],))
+        c.execute("SELECT id, owner_id, status, guild_id, channel_id, self_mute, self_deaf, join_voice, is_active, bot_username, activities_json, rotation_interval FROM tokens WHERE owner_id = ?", (user["id"],))
     rows = c.fetchall()
     conn.close()
     
@@ -497,6 +552,8 @@ async def get_tokens(user: dict = Depends(get_current_user)):
             "id": r[0], "owner_id": r[1], "status": r[2], "guild_id": r[3], "channel_id": r[4], 
             "self_mute": bool(r[5]), "self_deaf": bool(r[6]), "join_voice": bool(r[7]), 
             "is_active": bool(r[8]), "bot_username": r[9],
+            "activities_json": json.loads(r[10]) if r[10] else [],
+            "rotation_interval": r[11] if r[11] is not None else 30,
             "is_connected": is_connected
         })
     return tokens
@@ -509,12 +566,14 @@ class TokenUpdate(BaseModel):
     self_deaf: Optional[bool] = None
     join_voice: Optional[bool] = None
     is_active: Optional[bool] = None
+    activities_json: Optional[list] = None
+    rotation_interval: Optional[int] = None
 
 @app.put("/api/tokens/{token_id}")
 async def update_token(token_id: int, data: TokenUpdate, user: dict = Depends(get_current_user)):
     conn = sqlite3.connect(DB_PATH)
     c = conn.cursor()
-    c.execute("SELECT owner_id, encrypted_token, status, guild_id, channel_id, self_mute, self_deaf, join_voice, is_active FROM tokens WHERE id = ?", (token_id,))
+    c.execute("SELECT owner_id, encrypted_token, status, guild_id, channel_id, self_mute, self_deaf, join_voice, is_active, activities_json, rotation_interval FROM tokens WHERE id = ?", (token_id,))
     row = c.fetchone()
     if not row:
         conn.close()
@@ -532,14 +591,16 @@ async def update_token(token_id: int, data: TokenUpdate, user: dict = Depends(ge
     new_self_deaf = data.self_deaf if data.self_deaf is not None else row[6]
     new_join_voice = data.join_voice if data.join_voice is not None else row[7]
     new_is_active = data.is_active if data.is_active is not None else row[8]
+    new_activities = data.activities_json if data.activities_json is not None else (json.loads(row[9]) if row[9] else [])
+    new_rot_int = data.rotation_interval if data.rotation_interval is not None else (row[10] if row[10] else 30)
     
-    c.execute('''UPDATE tokens SET status = ?, guild_id = ?, channel_id = ?, self_mute = ?, self_deaf = ?, join_voice = ?, is_active = ? WHERE id = ?''', 
-              (new_status, new_guild_id, new_channel_id, new_self_mute, new_self_deaf, new_join_voice, new_is_active, token_id))
+    c.execute('''UPDATE tokens SET status = ?, guild_id = ?, channel_id = ?, self_mute = ?, self_deaf = ?, join_voice = ?, is_active = ?, activities_json = ?, rotation_interval = ? WHERE id = ?''', 
+              (new_status, new_guild_id, new_channel_id, new_self_mute, new_self_deaf, new_join_voice, new_is_active, json.dumps(new_activities), new_rot_int, token_id))
     conn.commit()
     conn.close()
     
-    # Update bot dynamically without disconnecting
-    await bot_manager.update_bot(token_id, row[1], new_status, new_guild_id, new_channel_id, new_self_mute, new_self_deaf, new_join_voice, new_is_active)
+    # Update bot dynamically
+    await bot_manager.update_bot(token_id, row[1], new_status, new_guild_id, new_channel_id, new_self_mute, new_self_deaf, new_join_voice, new_is_active, new_activities, new_rot_int)
     
     return {"message": "Token updated"}
 

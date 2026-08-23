@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Selfbot Manager - Dashboard</title>
-    <link rel="stylesheet" href="/static/style.css?v=14">
+    <link rel="stylesheet" href="/static/style.css?v=15">
 </head>
 <body>
     <div class="container">
@@ -79,7 +79,32 @@
                         <option value="invisible">Invisible</option>
                     </select>
                 </div>
-                <div class="form-group" style="margin-top: 0.5rem; margin-bottom: 0.5rem;">
+                <div class="form-group" style="margin-top: 1rem; padding-top: 1rem; border-top: 1px solid var(--glass-border);">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+                        <label style="margin: 0;">Activités (Rotation)</label>
+                        <div style="display: flex; align-items: center; gap: 0.5rem;">
+                            <span style="font-size: 0.75rem; color: var(--text-secondary);">Intervalle (s):</span>
+                            <input type="number" class="rotation-interval-input glass-input" value="30" min="15" style="width: 60px; padding: 0.25rem; font-size: 0.8rem;">
+                        </div>
+                    </div>
+                    
+                    <div class="activities-list" style="display: flex; flex-direction: column; gap: 0.5rem; margin-bottom: 0.75rem;">
+                        <!-- JS injects activities here -->
+                    </div>
+
+                    <div style="display: flex; gap: 0.5rem;">
+                        <select class="new-activity-type glass-input" style="width: 110px; padding: 0.5rem;">
+                            <option value="0">Joue à</option>
+                            <option value="2">Écoute</option>
+                            <option value="3">Regarde</option>
+                            <option value="5">Participe à</option>
+                        </select>
+                        <input type="text" class="new-activity-name glass-input" placeholder="Ex: Spotify" style="flex-grow: 1; padding: 0.5rem;">
+                        <button type="button" class="glass-button glass-button-primary add-activity-btn" style="padding: 0.5rem 1rem;">+</button>
+                    </div>
+                </div>
+
+                <div class="form-group" style="margin-top: 1rem; margin-bottom: 0.5rem;">
                     <label class="switch-container">
                         <input type="checkbox" class="join-voice-checkbox">
                         <span class="switch-slider"></span>
@@ -112,6 +137,6 @@
         </div>
     </template>
 
-    <script src="/static/script.js?v=14"></script>
+    <script src="/static/script.js?v=15"></script>
 </body>
 </html>

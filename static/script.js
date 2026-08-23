@@ -196,6 +196,58 @@ function renderTokens(tokens) {
         muteCheckbox.checked = token.self_mute;
         deafCheckbox.checked = token.self_deaf;
 
+        const rotationInput = clone.querySelector('.rotation-interval-input');
+        rotationInput.value = token.rotation_interval || 30;
+
+        const activitiesList = clone.querySelector('.activities-list');
+        let currentActivities = token.activities_json || [];
+
+        const renderActivities = () => {
+            activitiesList.innerHTML = '';
+            currentActivities.forEach((act, idx) => {
+                const actDiv = document.createElement('div');
+                actDiv.style.display = 'flex';
+                actDiv.style.gap = '0.5rem';
+                actDiv.style.alignItems = 'center';
+                
+                const typeLabels = {0: "Joue à", 2: "Écoute", 3: "Regarde", 5: "Participe à"};
+                
+                actDiv.innerHTML = `
+                    <div class="glass-panel" style="flex-grow: 1; padding: 0.4rem 0.6rem; display: flex; gap: 0.5rem; align-items: center; border-radius: 4px; font-size: 0.85rem;">
+                        <span style="color: var(--text-secondary); font-weight: bold;">${typeLabels[act.type] || '???'}</span>
+                        <span>${act.name.replace(/</g, "&lt;")}</span>
+                    </div>
+                    <button type="button" class="glass-button glass-button-danger remove-act-btn" style="padding: 0.4rem 0.6rem; flex-shrink: 0;" data-idx="${idx}">✖</button>
+                `;
+                activitiesList.appendChild(actDiv);
+            });
+
+            activitiesList.querySelectorAll('.remove-act-btn').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    const idx = parseInt(e.currentTarget.getAttribute('data-idx'));
+                    currentActivities.splice(idx, 1);
+                    renderActivities();
+                });
+            });
+            updateDisabledStates();
+        };
+
+        const addActBtn = clone.querySelector('.add-activity-btn');
+        const newActType = clone.querySelector('.new-activity-type');
+        const newActName = clone.querySelector('.new-activity-name');
+
+        addActBtn.addEventListener('click', () => {
+            const t = parseInt(newActType.value);
+            const n = newActName.value.trim();
+            if (n) {
+                currentActivities.push({type: t, name: n});
+                newActName.value = '';
+                renderActivities();
+            }
+        });
+        
+        renderActivities();
+
         // Interactive logic to disable fields
         const updateDisabledStates = () => {
             const isActive = isActiveCheckbox.checked;
@@ -210,8 +262,15 @@ function renderTokens(tokens) {
             muteCheckbox.disabled = voiceFieldsDisabled;
             deafCheckbox.disabled = voiceFieldsDisabled;
 
+            rotationInput.disabled = !isActive;
+            newActType.disabled = !isActive;
+            newActName.disabled = !isActive;
+            addActBtn.disabled = !isActive;
+            activitiesList.querySelectorAll('.remove-act-btn').forEach(btn => btn.disabled = !isActive);
+
             // Toggle CSS classes for parent containers to ensure visual feedback
             statusSelect.parentElement.classList.toggle('disabled-field', !isActive);
+            rotationInput.parentElement.parentElement.parentElement.classList.toggle('disabled-field', !isActive);
             joinVoiceCheckbox.parentElement.classList.toggle('disabled-field', !isActive);
             
             guildInput.parentElement.classList.toggle('disabled-field', voiceFieldsDisabled);
@@ -246,7 +305,9 @@ function renderTokens(tokens) {
                 self_mute: muteChecked,
                 self_deaf: deafChecked,
                 join_voice: joinChecked,
-                is_active: activeChecked
+                is_active: activeChecked,
+                activities_json: currentActivities,
+                rotation_interval: parseInt(rotationInput.value) || 30
             }).then(() => {
                 btn.textContent = 'Sauvegardé!';
                 btn.style.backgroundColor = '#10b981'; // success green
