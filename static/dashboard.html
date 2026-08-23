@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Selfbot Manager - Dashboard</title>
-    <link rel="stylesheet" href="/static/style.css?v=11">
+    <link rel="stylesheet" href="/static/style.css?v=12">
 </head>
 <body>
     <div class="container">
@@ -50,15 +50,15 @@
     <!-- Template for a token card -->
     <template id="token-card-template">
         <div class="token-card glass-panel">
-            <div class="token-header">
-                <div class="token-header-info">
-                    <h3 class="token-id-display"></h3>
-                    <div style="display: flex; gap: 0.5rem; align-items: center; margin-top: 0.25rem;">
-                        <span class="owner-badge hidden">Propriétaire: <span class="t-owner"></span></span>
-                        <span class="connection-status-badge"></span>
+            <div class="token-header" style="align-items: flex-start; gap: 1rem;">
+                <div class="token-header-info" style="flex-grow: 1; min-width: 0;">
+                    <h3 class="token-id-display" style="margin: 0; word-break: break-all;"></h3>
+                    <div style="display: flex; gap: 0.5rem; align-items: flex-start; margin-top: 0.5rem; flex-wrap: wrap;">
+                        <span class="owner-badge hidden" style="white-space: nowrap;">Propriétaire: <span class="t-owner"></span></span>
+                        <span class="connection-status-badge" style="white-space: nowrap;"></span>
                     </div>
                 </div>
-                <button class="glass-button glass-button-danger delete-btn" title="Supprimer">✖</button>
+                <button class="glass-button glass-button-danger delete-btn" title="Supprimer" style="flex-shrink: 0; padding: 6px 12px;">✖</button>
             </div>
             
             <div class="token-body">
@@ -112,6 +112,6 @@
         </div>
     </template>
 
-    <script src="/static/script.js?v=11"></script>
+    <script src="/static/script.js?v=12"></script>
 </body>
 </html>
