@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Selfbot Manager - Dashboard</title>
-    <link rel="stylesheet" href="/static/style.css?v=18">
+    <link rel="stylesheet" href="/static/style.css?v=19">
 </head>
 <body>
     <div class="container">
@@ -79,19 +79,20 @@
                         <option value="invisible">Invisible</option>
                     </select>
                 </div>
-                <div class="form-group" style="margin-top: 1rem; padding-top: 1rem; border-top: 1px solid var(--glass-border);">
-                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
-                        <label class="switch-container" style="margin: 0;">
-                            <input type="checkbox" class="rotate-status-checkbox">
-                            <span class="switch-slider"></span>
-                            <b>Activités (Rotation)</b>
-                        </label>
-                        <div style="display: flex; align-items: center; gap: 0.5rem;" class="rotation-interval-wrapper">
-                            <span style="font-size: 0.75rem; color: var(--text-secondary);">Intervalle (s):</span>
-                            <input type="number" class="rotation-interval-input glass-input" value="30" min="15" style="width: 60px; padding: 0.25rem; font-size: 0.8rem;">
-                        </div>
-                    </div>
-                    
+                <div class="form-group" style="margin-top: 1rem; padding-top: 1rem; border-top: 1px solid var(--glass-border); margin-bottom: 0.5rem;">
+                    <label class="switch-container">
+                        <input type="checkbox" class="rotate-status-checkbox">
+                        <span class="switch-slider"></span>
+                        <b>Activer Rotation des Statuts</b>
+                    </label>
+                </div>
+
+                <div class="form-group rotation-interval-wrapper" style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.75rem;">
+                    <span style="font-size: 0.85rem; color: var(--text-secondary);">Intervalle (secondes) :</span>
+                    <input type="number" class="rotation-interval-input glass-input" value="30" min="15" style="width: 80px; padding: 0.3rem; text-align: center;">
+                </div>
+                
+                <div class="form-group activities-list-wrapper">
                     <div class="activities-list" style="display: flex; flex-direction: column; gap: 0.5rem; margin-bottom: 0.75rem;">
                         <!-- JS injects activities here -->
                     </div>
@@ -141,5 +142,5 @@
         </div>
     </template>
 
-    <script src="/static/script.js?v=18"></script></body>
+    <script src="/static/script.js?v=19"></script></body>
 </html>

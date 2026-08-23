@@ -276,11 +276,10 @@ function renderTokens(tokens) {
             activitiesList.querySelectorAll('.remove-act-btn').forEach(btn => btn.disabled = rotateFieldsDisabled);
 
             // Toggle CSS classes for parent containers to ensure visual feedback
-            statusSelect.parentElement.classList.toggle('disabled-field', !isActive);
-            rotateStatusCheckbox.parentElement.parentElement.parentElement.classList.toggle('disabled-field', !isActive);
+            statusSelect.closest('.form-group').classList.toggle('disabled-field', !isActive);
+            rotateStatusCheckbox.closest('.form-group').classList.toggle('disabled-field', !isActive);
             clone.querySelector('.rotation-interval-wrapper').classList.toggle('disabled-field', rotateFieldsDisabled);
-            newActType.parentElement.classList.toggle('disabled-field', rotateFieldsDisabled);
-            activitiesList.classList.toggle('disabled-field', rotateFieldsDisabled);
+            newActType.closest('.form-group').classList.toggle('disabled-field', rotateFieldsDisabled);
             joinVoiceCheckbox.parentElement.classList.toggle('disabled-field', !isActive);
             
             guildInput.parentElement.classList.toggle('disabled-field', voiceFieldsDisabled);
