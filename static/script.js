@@ -86,7 +86,12 @@ function renderTokens(tokens) {
         const card = clone.querySelector('.token-card');
         card.style.animationDelay = `${index * 0.1}s`;
 
-        clone.querySelector('.t-id').textContent = token.id;
+        const title = clone.querySelector('.token-id-display');
+        if (token.bot_username && token.bot_username !== "Unknown") {
+            title.innerHTML = `👤 ${token.bot_username} <span style="font-size: 0.8rem; color: #94a3b8;">(#${token.id})</span>`;
+        } else {
+            title.innerHTML = `Token #${token.id}`;
+        }
         
         if (currentUser && currentUser.is_admin) {
             const badge = clone.querySelector('.owner-badge');

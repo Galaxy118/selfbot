@@ -65,6 +65,7 @@ def init_db():
             self_deaf BOOLEAN DEFAULT 0,
             join_voice BOOLEAN DEFAULT 0,
             is_active BOOLEAN DEFAULT 1,
+            bot_username TEXT,
             FOREIGN KEY (owner_id) REFERENCES users(discord_id)
         )
     ''')
@@ -81,6 +82,10 @@ def init_db():
         pass # Column exists
     try:
         c.execute("ALTER TABLE tokens ADD COLUMN is_active BOOLEAN DEFAULT 1")
+    except sqlite3.OperationalError:
+        pass # Column exists
+    try:
+        c.execute("ALTER TABLE tokens ADD COLUMN bot_username TEXT")
     except sqlite3.OperationalError:
         pass # Column exists
     conn.commit()
@@ -419,12 +424,14 @@ async def add_token(data: TokenCreate, user: dict = Depends(get_current_user)):
         if token_user["id"] != user["id"]:
             raise HTTPException(status_code=403, detail="This token does not belong to your Discord account.")
             
+        bot_username = token_user.get("username", "Unknown")
+            
     encrypted_token = encrypt_token(data.token)
     
     conn = sqlite3.connect("data.db")
     c = conn.cursor()
     try:
-        c.execute("INSERT INTO tokens (owner_id, encrypted_token) VALUES (?, ?)", (user["id"], encrypted_token))
+        c.execute("INSERT INTO tokens (owner_id, encrypted_token, bot_username) VALUES (?, ?, ?)", (user["id"], encrypted_token, bot_username))
         token_id = c.lastrowid
         conn.commit()
     except Exception as e:
@@ -442,13 +449,13 @@ async def get_tokens(user: dict = Depends(get_current_user)):
     conn = sqlite3.connect("data.db")
     c = conn.cursor()
     if user["is_admin"]:
-        c.execute("SELECT id, owner_id, status, guild_id, channel_id, self_mute, self_deaf, join_voice, is_active FROM tokens")
+        c.execute("SELECT id, owner_id, status, guild_id, channel_id, self_mute, self_deaf, join_voice, is_active, bot_username FROM tokens")
     else:
-        c.execute("SELECT id, owner_id, status, guild_id, channel_id, self_mute, self_deaf, join_voice, is_active FROM tokens WHERE owner_id = ?", (user["id"],))
+        c.execute("SELECT id, owner_id, status, guild_id, channel_id, self_mute, self_deaf, join_voice, is_active, bot_username FROM tokens WHERE owner_id = ?", (user["id"],))
     rows = c.fetchall()
     conn.close()
     
-    tokens = [{"id": r[0], "owner_id": r[1], "status": r[2], "guild_id": r[3], "channel_id": r[4], "self_mute": bool(r[5]), "self_deaf": bool(r[6]), "join_voice": bool(r[7]), "is_active": bool(r[8])} for r in rows]
+    tokens = [{"id": r[0], "owner_id": r[1], "status": r[2], "guild_id": r[3], "channel_id": r[4], "self_mute": bool(r[5]), "self_deaf": bool(r[6]), "join_voice": bool(r[7]), "is_active": bool(r[8]), "bot_username": r[9]} for r in rows]
     return tokens
 
 class TokenUpdate(BaseModel):
