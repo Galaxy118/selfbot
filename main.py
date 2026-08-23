@@ -23,7 +23,10 @@ from starlette.middleware.sessions import SessionMiddleware
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-load_dotenv()
+ENV_PATH = os.environ.get("ENV_PATH", ".env")
+load_dotenv(ENV_PATH)
+
+DB_PATH = os.environ.get("DB_PATH", "data.db")
 
 CLIENT_ID = os.environ.get("CLIENT_ID", "")
 CLIENT_SECRET = os.environ.get("CLIENT_SECRET", "")
@@ -46,7 +49,7 @@ def decrypt_token(encrypted_token: str) -> str:
 
 # --- DB SETUP ---
 def init_db():
-    conn = sqlite3.connect("data.db")
+    conn = sqlite3.connect(DB_PATH)
     c = conn.cursor()
     c.execute('''
         CREATE TABLE IF NOT EXISTS users (
@@ -94,7 +97,7 @@ def init_db():
     conn.close()
 
 def is_global_active():
-    conn = sqlite3.connect("data.db")
+    conn = sqlite3.connect(DB_PATH)
     c = conn.cursor()
     c.execute("SELECT global_active FROM system_settings WHERE id = 1")
     res = c.fetchone()
@@ -112,7 +115,7 @@ class DiscordManager:
         if not is_global_active():
             return
             
-        conn = sqlite3.connect("data.db")
+        conn = sqlite3.connect(DB_PATH)
         c = conn.cursor()
         c.execute("SELECT id, encrypted_token, status, guild_id, channel_id, self_mute, self_deaf, join_voice, is_active FROM tokens")
         rows = c.fetchall()
@@ -352,7 +355,7 @@ async def auth_callback(request: Request, code: str):
         user_data = user_res.json()
         
         # Save user to DB
-        conn = sqlite3.connect("data.db")
+        conn = sqlite3.connect(DB_PATH)
         c = conn.cursor()
         c.execute("INSERT OR REPLACE INTO users (discord_id, username, avatar) VALUES (?, ?, ?)", 
                   (user_data["id"], user_data["username"], user_data.get("avatar", "")))
@@ -397,7 +400,7 @@ async def update_global_active(data: dict, user: dict = Depends(get_current_user
         raise HTTPException(status_code=403, detail="Admin only")
         
     active = data.get("global_active", True)
-    conn = sqlite3.connect("data.db")
+    conn = sqlite3.connect(DB_PATH)
     c = conn.cursor()
     c.execute("UPDATE system_settings SET global_active = ? WHERE id = 1", (active,))
     conn.commit()
@@ -428,7 +431,7 @@ async def add_token(data: TokenCreate, user: dict = Depends(get_current_user)):
             raise HTTPException(status_code=429, detail="Veuillez patienter avant d'essayer d'ajouter un autre token.")
     token_add_rates[user_id] = current_time
 
-    conn = sqlite3.connect("data.db")
+    conn = sqlite3.connect(DB_PATH)
     c = conn.cursor()
     
     if not user["is_admin"]:
@@ -472,7 +475,7 @@ async def add_token(data: TokenCreate, user: dict = Depends(get_current_user)):
 
 @app.get("/api/tokens")
 async def get_tokens(user: dict = Depends(get_current_user)):
-    conn = sqlite3.connect("data.db")
+    conn = sqlite3.connect(DB_PATH)
     c = conn.cursor()
     if user["is_admin"]:
         c.execute("SELECT id, owner_id, status, guild_id, channel_id, self_mute, self_deaf, join_voice, is_active, bot_username FROM tokens")
@@ -495,7 +498,7 @@ class TokenUpdate(BaseModel):
 
 @app.put("/api/tokens/{token_id}")
 async def update_token(token_id: int, data: TokenUpdate, user: dict = Depends(get_current_user)):
-    conn = sqlite3.connect("data.db")
+    conn = sqlite3.connect(DB_PATH)
     c = conn.cursor()
     c.execute("SELECT owner_id, encrypted_token, status, guild_id, channel_id, self_mute, self_deaf, join_voice, is_active FROM tokens WHERE id = ?", (token_id,))
     row = c.fetchone()
@@ -528,7 +531,7 @@ async def update_token(token_id: int, data: TokenUpdate, user: dict = Depends(ge
 
 @app.delete("/api/tokens/{token_id}")
 async def delete_token(token_id: int, user: dict = Depends(get_current_user)):
-    conn = sqlite3.connect("data.db")
+    conn = sqlite3.connect(DB_PATH)
     c = conn.cursor()
     c.execute("SELECT owner_id FROM tokens WHERE id = ?", (token_id,))
     row = c.fetchone()
