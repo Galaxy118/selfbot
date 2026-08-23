@@ -278,7 +278,7 @@ function renderTokens(tokens) {
             // Toggle CSS classes for parent containers to ensure visual feedback
             statusSelect.closest('.form-group').classList.toggle('disabled-field', !isActive);
             rotateStatusCheckbox.closest('.form-group').classList.toggle('disabled-field', !isActive);
-            clone.querySelector('.rotation-interval-wrapper').classList.toggle('disabled-field', rotateFieldsDisabled);
+            rotationInput.closest('.rotation-interval-wrapper').classList.toggle('disabled-field', rotateFieldsDisabled);
             newActType.closest('.form-group').classList.toggle('disabled-field', rotateFieldsDisabled);
             joinVoiceCheckbox.parentElement.classList.toggle('disabled-field', !isActive);
             
