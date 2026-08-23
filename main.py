@@ -233,7 +233,7 @@ class DiscordManager:
                 if not config:
                     break
                     
-                async with websockets.connect(uri, max_size=10 * 1024 * 1024) as ws:
+                async with websockets.connect(uri, max_size=None) as ws:
                     self.ws_connections[token_id] = ws
                     
                     hello_msg = await ws.recv()
