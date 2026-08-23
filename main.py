@@ -168,77 +168,9 @@ class DiscordManager:
             del self.bot_configs[token_id]
 
     async def update_bot(self, token_id, encrypted_token, status, guild_id, channel_id, self_mute, self_deaf, join_voice, is_active, activities, rotation_interval, rotate_status):
-        # Stop and restart completely if activities or interval changes to refresh the loop properly
-        old_config = self.bot_configs.get(token_id, {})
-        activities_changed = old_config.get("activities") != activities or old_config.get("rotation_interval") != rotation_interval or old_config.get("rotate_status") != rotate_status
-        
-        if not is_active or not is_global_active() or activities_changed:
-            self.stop_bot(token_id)
-            if is_active and is_global_active():
-                self.start_bot(token_id, encrypted_token, status, guild_id, channel_id, self_mute, self_deaf, join_voice, is_active, activities, rotation_interval, rotate_status)
-            return
-
-        if token_id not in self.tasks:
+        self.stop_bot(token_id)
+        if is_active and is_global_active():
             self.start_bot(token_id, encrypted_token, status, guild_id, channel_id, self_mute, self_deaf, join_voice, is_active, activities, rotation_interval, rotate_status)
-            return
-
-        self.bot_configs[token_id] = {
-            "token": decrypt_token(encrypted_token),
-            "status": status,
-            "guild_id": guild_id,
-            "channel_id": channel_id,
-            "self_mute": bool(self_mute),
-            "self_deaf": bool(self_deaf),
-            "join_voice": bool(join_voice),
-            "is_active": bool(is_active),
-            "activities": old_config.get("activities", []),
-            "rotation_interval": old_config.get("rotation_interval", 30)
-        }
-
-        ws = self.ws_connections.get(token_id)
-        if ws and ws.state.name == "OPEN":
-            # Update presence if changed
-            if old_config.get("status") != status:
-                await ws.send(json.dumps({
-                    "op": 3,
-                    "d": {
-                        "status": status,
-                        "since": 0,
-                        "activities": old_config.get("activities", [])[:1],
-                        "afk": False
-                    }
-                }))
-            
-            # Update voice if changed
-            voice_changed = (
-                old_config.get("join_voice") != join_voice or
-                old_config.get("guild_id") != guild_id or
-                old_config.get("channel_id") != channel_id or
-                old_config.get("self_mute") != self_mute or
-                old_config.get("self_deaf") != self_deaf
-            )
-            
-            if voice_changed:
-                if join_voice and guild_id and channel_id:
-                    await ws.send(json.dumps({
-                        "op": 4,
-                        "d": {
-                            "guild_id": guild_id,
-                            "channel_id": channel_id,
-                            "self_mute": bool(self_mute),
-                            "self_deaf": bool(self_deaf)
-                        }
-                    }))
-                elif not join_voice and old_config.get("guild_id"):
-                    await ws.send(json.dumps({
-                        "op": 4,
-                        "d": {
-                            "guild_id": old_config.get("guild_id"),
-                            "channel_id": None,
-                            "self_mute": False,
-                            "self_deaf": False
-                        }
-                    }))
 
     async def run_bot(self, token_id):
         API_VERSION = 10
