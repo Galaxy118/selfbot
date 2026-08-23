@@ -38,7 +38,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                     });
                 }
             } catch (e) {
-                console.error('Erreur lors de l\\'actualisation des statuts', e);
+                console.error("Erreur lors de l'actualisation des statuts", e);
             }
         }, 5000);
     }
