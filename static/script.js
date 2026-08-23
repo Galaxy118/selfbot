@@ -34,13 +34,40 @@ async function fetchUser() {
 
 async function fetchTokens() {
     try {
+        const userRes = await fetch('/api/me');
+        const user = await userRes.json();
+        
+        if (user.is_admin) {
+            document.getElementById('admin-panel').style.display = 'flex';
+            fetchGlobalSettings();
+        }
+
         const res = await fetch('/api/tokens');
+        const tokens = await res.json();
+        renderTokens(tokens, user);
+    } catch (e) {
+        console.error("Error fetching data", e);
+    }
+}
+
+async function fetchGlobalSettings() {
+    try {
+        const res = await fetch('/api/settings');
         if (res.ok) {
-            const tokens = await res.json();
-            renderTokens(tokens);
+            const data = await res.json();
+            const toggle = document.getElementById('global-active-toggle');
+            toggle.checked = data.global_active;
+            toggle.addEventListener('change', async (e) => {
+                const active = e.target.checked;
+                await fetch('/api/settings/global_active', {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ global_active: active })
+                });
+            });
         }
     } catch (e) {
-        console.error("Failed to fetch tokens", e);
+        console.error(e);
     }
 }
 
@@ -76,6 +103,7 @@ function renderTokens(tokens) {
         const channelInput = clone.querySelector('.channel-input');
         channelInput.value = token.channel_id || '';
         
+        clone.querySelector('.is-active-checkbox').checked = token.is_active;
         clone.querySelector('.join-voice-checkbox').checked = token.join_voice;
         clone.querySelector('.mute-checkbox').checked = token.self_mute;
         clone.querySelector('.deaf-checkbox').checked = token.self_deaf;
@@ -90,6 +118,7 @@ function renderTokens(tokens) {
             btn.textContent = '...';
             btn.disabled = true;
 
+            const activeChecked = card.querySelector('.is-active-checkbox').checked;
             const joinChecked = card.querySelector('.join-voice-checkbox').checked;
             const muteChecked = card.querySelector('.mute-checkbox').checked;
             const deafChecked = card.querySelector('.deaf-checkbox').checked;
@@ -100,7 +129,8 @@ function renderTokens(tokens) {
                 channel_id: channelInput.value || null,
                 self_mute: muteChecked,
                 self_deaf: deafChecked,
-                join_voice: joinChecked
+                join_voice: joinChecked,
+                is_active: activeChecked
             }).then(() => {
                 btn.textContent = 'Sauvegardé!';
                 btn.style.backgroundColor = '#10b981'; // success green

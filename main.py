@@ -64,15 +64,35 @@ def init_db():
             self_mute BOOLEAN DEFAULT 1,
             self_deaf BOOLEAN DEFAULT 0,
             join_voice BOOLEAN DEFAULT 0,
+            is_active BOOLEAN DEFAULT 1,
             FOREIGN KEY (owner_id) REFERENCES users(discord_id)
         )
     ''')
+    c.execute('''
+        CREATE TABLE IF NOT EXISTS system_settings (
+            id INTEGER PRIMARY KEY,
+            global_active BOOLEAN DEFAULT 1
+        )
+    ''')
+    c.execute("INSERT OR IGNORE INTO system_settings (id, global_active) VALUES (1, 1)")
     try:
         c.execute("ALTER TABLE tokens ADD COLUMN join_voice BOOLEAN DEFAULT 0")
     except sqlite3.OperationalError:
         pass # Column exists
+    try:
+        c.execute("ALTER TABLE tokens ADD COLUMN is_active BOOLEAN DEFAULT 1")
+    except sqlite3.OperationalError:
+        pass # Column exists
     conn.commit()
     conn.close()
+
+def is_global_active():
+    conn = sqlite3.connect("data.db")
+    c = conn.cursor()
+    c.execute("SELECT global_active FROM system_settings WHERE id = 1")
+    res = c.fetchone()
+    conn.close()
+    return bool(res[0]) if res else True
 
 # --- DISCORD MANAGER ---
 class DiscordManager:
@@ -82,17 +102,23 @@ class DiscordManager:
         self.bot_configs: Dict[int, dict] = {}
 
     async def start_all(self):
+        if not is_global_active():
+            return
+            
         conn = sqlite3.connect("data.db")
         c = conn.cursor()
-        c.execute("SELECT id, encrypted_token, status, guild_id, channel_id, self_mute, self_deaf, join_voice FROM tokens")
+        c.execute("SELECT id, encrypted_token, status, guild_id, channel_id, self_mute, self_deaf, join_voice, is_active FROM tokens")
         rows = c.fetchall()
         conn.close()
 
         for row in rows:
-            self.start_bot(row[0], row[1], row[2], row[3], row[4], row[5], row[6], row[7])
+            self.start_bot(row[0], row[1], row[2], row[3], row[4], row[5], row[6], row[7], row[8])
 
-    def start_bot(self, token_id, encrypted_token, status, guild_id, channel_id, self_mute, self_deaf, join_voice):
+    def start_bot(self, token_id, encrypted_token, status, guild_id, channel_id, self_mute, self_deaf, join_voice, is_active):
         self.stop_bot(token_id)
+        if not is_active or not is_global_active():
+            return
+            
         self.bot_configs[token_id] = {
             "token": decrypt_token(encrypted_token),
             "status": status,
@@ -100,7 +126,8 @@ class DiscordManager:
             "channel_id": channel_id,
             "self_mute": bool(self_mute),
             "self_deaf": bool(self_deaf),
-            "join_voice": bool(join_voice)
+            "join_voice": bool(join_voice),
+            "is_active": bool(is_active)
         }
         task = asyncio.create_task(self.run_bot(token_id))
         self.tasks[token_id] = task
@@ -112,9 +139,13 @@ class DiscordManager:
         if token_id in self.bot_configs:
             del self.bot_configs[token_id]
 
-    async def update_bot(self, token_id, encrypted_token, status, guild_id, channel_id, self_mute, self_deaf, join_voice):
+    async def update_bot(self, token_id, encrypted_token, status, guild_id, channel_id, self_mute, self_deaf, join_voice, is_active):
+        if not is_active or not is_global_active():
+            self.stop_bot(token_id)
+            return
+            
         if token_id not in self.tasks:
-            self.start_bot(token_id, encrypted_token, status, guild_id, channel_id, self_mute, self_deaf, join_voice)
+            self.start_bot(token_id, encrypted_token, status, guild_id, channel_id, self_mute, self_deaf, join_voice, is_active)
             return
 
         old_config = self.bot_configs.get(token_id, {})
@@ -125,7 +156,8 @@ class DiscordManager:
             "channel_id": channel_id,
             "self_mute": bool(self_mute),
             "self_deaf": bool(self_deaf),
-            "join_voice": bool(join_voice)
+            "join_voice": bool(join_voice),
+            "is_active": bool(is_active)
         }
 
         ws = self.ws_connections.get(token_id)
@@ -346,6 +378,32 @@ def get_current_user(request: Request):
 async def get_me(user: dict = Depends(get_current_user)):
     return user
 
+@app.get("/api/settings")
+async def get_settings(user: dict = Depends(get_current_user)):
+    if not user["is_admin"]:
+        raise HTTPException(status_code=403, detail="Admin only")
+    return {"global_active": is_global_active()}
+
+@app.put("/api/settings/global_active")
+async def update_global_active(data: dict, user: dict = Depends(get_current_user)):
+    if not user["is_admin"]:
+        raise HTTPException(status_code=403, detail="Admin only")
+        
+    active = data.get("global_active", True)
+    conn = sqlite3.connect("data.db")
+    c = conn.cursor()
+    c.execute("UPDATE system_settings SET global_active = ? WHERE id = 1", (active,))
+    conn.commit()
+    conn.close()
+    
+    if active:
+        asyncio.create_task(bot_manager.start_all())
+    else:
+        for tid in list(bot_manager.tasks.keys()):
+            bot_manager.stop_bot(tid)
+            
+    return {"message": "Global status updated"}
+
 class TokenCreate(BaseModel):
     token: str
 
@@ -375,8 +433,8 @@ async def add_token(data: TokenCreate, user: dict = Depends(get_current_user)):
         
     conn.close()
     
-    # Start bot (default join_voice = false on new tokens)
-    bot_manager.start_bot(token_id, encrypted_token, 'online', None, None, True, False, False)
+    # Start bot
+    bot_manager.start_bot(token_id, encrypted_token, 'online', None, None, True, False, False, True)
     return {"message": "Token added successfully"}
 
 @app.get("/api/tokens")
@@ -384,13 +442,13 @@ async def get_tokens(user: dict = Depends(get_current_user)):
     conn = sqlite3.connect("data.db")
     c = conn.cursor()
     if user["is_admin"]:
-        c.execute("SELECT id, owner_id, status, guild_id, channel_id, self_mute, self_deaf, join_voice FROM tokens")
+        c.execute("SELECT id, owner_id, status, guild_id, channel_id, self_mute, self_deaf, join_voice, is_active FROM tokens")
     else:
-        c.execute("SELECT id, owner_id, status, guild_id, channel_id, self_mute, self_deaf, join_voice FROM tokens WHERE owner_id = ?", (user["id"],))
+        c.execute("SELECT id, owner_id, status, guild_id, channel_id, self_mute, self_deaf, join_voice, is_active FROM tokens WHERE owner_id = ?", (user["id"],))
     rows = c.fetchall()
     conn.close()
     
-    tokens = [{"id": r[0], "owner_id": r[1], "status": r[2], "guild_id": r[3], "channel_id": r[4], "self_mute": bool(r[5]), "self_deaf": bool(r[6]), "join_voice": bool(r[7])} for r in rows]
+    tokens = [{"id": r[0], "owner_id": r[1], "status": r[2], "guild_id": r[3], "channel_id": r[4], "self_mute": bool(r[5]), "self_deaf": bool(r[6]), "join_voice": bool(r[7]), "is_active": bool(r[8])} for r in rows]
     return tokens
 
 class TokenUpdate(BaseModel):
@@ -400,12 +458,13 @@ class TokenUpdate(BaseModel):
     self_mute: Optional[bool] = None
     self_deaf: Optional[bool] = None
     join_voice: Optional[bool] = None
+    is_active: Optional[bool] = None
 
 @app.put("/api/tokens/{token_id}")
 async def update_token(token_id: int, data: TokenUpdate, user: dict = Depends(get_current_user)):
     conn = sqlite3.connect("data.db")
     c = conn.cursor()
-    c.execute("SELECT owner_id, encrypted_token, status, guild_id, channel_id, self_mute, self_deaf, join_voice FROM tokens WHERE id = ?", (token_id,))
+    c.execute("SELECT owner_id, encrypted_token, status, guild_id, channel_id, self_mute, self_deaf, join_voice, is_active FROM tokens WHERE id = ?", (token_id,))
     row = c.fetchone()
     if not row:
         conn.close()
@@ -422,14 +481,15 @@ async def update_token(token_id: int, data: TokenUpdate, user: dict = Depends(ge
     new_self_mute = data.self_mute if data.self_mute is not None else row[5]
     new_self_deaf = data.self_deaf if data.self_deaf is not None else row[6]
     new_join_voice = data.join_voice if data.join_voice is not None else row[7]
+    new_is_active = data.is_active if data.is_active is not None else row[8]
     
-    c.execute('''UPDATE tokens SET status = ?, guild_id = ?, channel_id = ?, self_mute = ?, self_deaf = ?, join_voice = ? WHERE id = ?''', 
-              (new_status, new_guild_id, new_channel_id, new_self_mute, new_self_deaf, new_join_voice, token_id))
+    c.execute('''UPDATE tokens SET status = ?, guild_id = ?, channel_id = ?, self_mute = ?, self_deaf = ?, join_voice = ?, is_active = ? WHERE id = ?''', 
+              (new_status, new_guild_id, new_channel_id, new_self_mute, new_self_deaf, new_join_voice, new_is_active, token_id))
     conn.commit()
     conn.close()
     
     # Update bot dynamically without disconnecting
-    await bot_manager.update_bot(token_id, row[1], new_status, new_guild_id, new_channel_id, new_self_mute, new_self_deaf, new_join_voice)
+    await bot_manager.update_bot(token_id, row[1], new_status, new_guild_id, new_channel_id, new_self_mute, new_self_deaf, new_join_voice, new_is_active)
     
     return {"message": "Token updated"}
 

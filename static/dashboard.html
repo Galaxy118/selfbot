@@ -37,6 +37,17 @@
             </form>
         </section>
 
+        <div id="admin-panel" style="display: none; background: rgba(255,255,255,0.05); padding: 15px 20px; border-radius: 12px; margin-bottom: 20px; border: 1px solid rgba(255,255,255,0.1); display: flex; justify-content: space-between; align-items: center;">
+            <div style="display: flex; align-items: center; gap: 10px;">
+                <h3 style="margin: 0; font-size: 1.1rem; color: #f87171;">🛠️ Administration Globale</h3>
+                <span style="font-size: 0.85rem; color: #94a3b8;">(Désactiver arrêtera tous les bots instantanément)</span>
+            </div>
+            <label class="switch">
+                <input type="checkbox" id="global-active-toggle">
+                <span class="slider round"></span>
+            </label>
+        </div>
+
         <section class="tokens-section">
             <div class="section-header">
                 <h2>Vos Selfbots</h2>
@@ -74,6 +85,12 @@
                 <div class="form-group">
                     <label>ID du Salon Vocal</label>
                     <input type="text" class="channel-input" placeholder="Ex: 1469426143471075440">
+                </div>
+                <div class="form-checkboxes" style="flex-wrap: wrap; margin-bottom: 10px;">
+                    <label class="checkbox-container">
+                        <input type="checkbox" class="is-active-checkbox">
+                        <span class="checkmark"></span> Activer le Bot
+                    </label>
                 </div>
                 <div class="form-checkboxes" style="flex-wrap: wrap;">
                     <label class="checkbox-container">
