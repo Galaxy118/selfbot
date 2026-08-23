@@ -1,4 +1,15 @@
 #!/bin/bash
+
+# Création de l'environnement virtuel s'il n'existe pas
+if [ ! -d "venv" ]; then
+    echo "Creating virtual environment..."
+    # Sur Ubuntu, python3-venv est nécessaire
+    python3 -m venv venv
+fi
+
+# Activation de l'environnement virtuel
+source venv/bin/activate
+
 echo "Installing dependencies..."
 pip3 install -r requirements.txt
 
