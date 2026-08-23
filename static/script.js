@@ -160,6 +160,10 @@ function renderTokens(tokens) {
             deafCheckbox.disabled = !(isActive && isVoice);
 
             // Toggle CSS classes for parent containers to ensure visual feedback
+            statusSelect.parentElement.classList.toggle('disabled-field', !isActive);
+            guildInput.parentElement.classList.toggle('disabled-field', !isActive);
+            channelInput.parentElement.classList.toggle('disabled-field', !isActive);
+            
             joinVoiceCheckbox.parentElement.classList.toggle('disabled-field', !isActive);
             muteCheckbox.parentElement.classList.toggle('disabled-field', !(isActive && isVoice));
             deafCheckbox.parentElement.classList.toggle('disabled-field', !(isActive && isVoice));
