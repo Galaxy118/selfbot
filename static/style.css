@@ -106,9 +106,14 @@ a:hover { opacity: 0.8; }
     outline: none;
     width: 100%;
 }
-.glass-input:focus {
+.glass-input:focus:not(:disabled) {
     border-color: rgba(255, 255, 255, 0.3);
     box-shadow: 0 0 0 3px rgba(141, 18, 171, 0.2);
+}
+.glass-input:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    background: rgba(0, 0, 0, 0.4);
 }
 
 /* Buttons */
@@ -324,6 +329,14 @@ select.glass-input option {
 }
 .switch-container input:checked + .switch-slider:before {
     transform: translateX(20px);
+}
+.switch-container input:disabled + .switch-slider {
+    opacity: 0.4;
+    cursor: not-allowed;
+}
+.switch-container:has(input:disabled) {
+    color: var(--text-tertiary);
+    cursor: not-allowed;
 }
 
 .toggles-grid {

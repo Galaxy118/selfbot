@@ -137,10 +137,33 @@ function renderTokens(tokens) {
         const channelInput = clone.querySelector('.channel-input');
         channelInput.value = token.channel_id || '';
         
-        clone.querySelector('.is-active-checkbox').checked = token.is_active;
-        clone.querySelector('.join-voice-checkbox').checked = token.join_voice;
-        clone.querySelector('.mute-checkbox').checked = token.self_mute;
-        clone.querySelector('.deaf-checkbox').checked = token.self_deaf;
+        const isActiveCheckbox = clone.querySelector('.is-active-checkbox');
+        const joinVoiceCheckbox = clone.querySelector('.join-voice-checkbox');
+        const muteCheckbox = clone.querySelector('.mute-checkbox');
+        const deafCheckbox = clone.querySelector('.deaf-checkbox');
+
+        isActiveCheckbox.checked = token.is_active;
+        joinVoiceCheckbox.checked = token.join_voice;
+        muteCheckbox.checked = token.self_mute;
+        deafCheckbox.checked = token.self_deaf;
+
+        // Interactive logic to disable fields
+        const updateDisabledStates = () => {
+            const isActive = isActiveCheckbox.checked;
+            const isVoice = joinVoiceCheckbox.checked;
+            
+            statusSelect.disabled = !isActive;
+            guildInput.disabled = !isActive;
+            channelInput.disabled = !isActive;
+            joinVoiceCheckbox.disabled = !isActive;
+            
+            muteCheckbox.disabled = !(isActive && isVoice);
+            deafCheckbox.disabled = !(isActive && isVoice);
+        };
+
+        isActiveCheckbox.addEventListener('change', updateDisabledStates);
+        joinVoiceCheckbox.addEventListener('change', updateDisabledStates);
+        updateDisabledStates(); // Init state
 
         // Add event listeners
         clone.querySelector('.delete-btn').addEventListener('click', () => handleDelete(token.id));
@@ -152,10 +175,10 @@ function renderTokens(tokens) {
             btn.textContent = '...';
             btn.disabled = true;
 
-            const activeChecked = card.querySelector('.is-active-checkbox').checked;
-            const joinChecked = card.querySelector('.join-voice-checkbox').checked;
-            const muteChecked = card.querySelector('.mute-checkbox').checked;
-            const deafChecked = card.querySelector('.deaf-checkbox').checked;
+            const activeChecked = isActiveCheckbox.checked;
+            const joinChecked = joinVoiceCheckbox.checked;
+            const muteChecked = muteCheckbox.checked;
+            const deafChecked = deafCheckbox.checked;
 
             handleUpdate(token.id, {
                 status: statusSelect.value,
