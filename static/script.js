@@ -153,20 +153,22 @@ function renderTokens(tokens) {
             const isVoice = joinVoiceCheckbox.checked;
             
             statusSelect.disabled = !isActive;
-            guildInput.disabled = !isActive;
-            channelInput.disabled = !isActive;
             joinVoiceCheckbox.disabled = !isActive;
-            muteCheckbox.disabled = !(isActive && isVoice);
-            deafCheckbox.disabled = !(isActive && isVoice);
+
+            const voiceFieldsDisabled = !(isActive && isVoice);
+            guildInput.disabled = voiceFieldsDisabled;
+            channelInput.disabled = voiceFieldsDisabled;
+            muteCheckbox.disabled = voiceFieldsDisabled;
+            deafCheckbox.disabled = voiceFieldsDisabled;
 
             // Toggle CSS classes for parent containers to ensure visual feedback
             statusSelect.parentElement.classList.toggle('disabled-field', !isActive);
-            guildInput.parentElement.classList.toggle('disabled-field', !isActive);
-            channelInput.parentElement.classList.toggle('disabled-field', !isActive);
-            
             joinVoiceCheckbox.parentElement.classList.toggle('disabled-field', !isActive);
-            muteCheckbox.parentElement.classList.toggle('disabled-field', !(isActive && isVoice));
-            deafCheckbox.parentElement.classList.toggle('disabled-field', !(isActive && isVoice));
+            
+            guildInput.parentElement.classList.toggle('disabled-field', voiceFieldsDisabled);
+            channelInput.parentElement.classList.toggle('disabled-field', voiceFieldsDisabled);
+            muteCheckbox.parentElement.classList.toggle('disabled-field', voiceFieldsDisabled);
+            deafCheckbox.parentElement.classList.toggle('disabled-field', voiceFieldsDisabled);
         };
 
         isActiveCheckbox.addEventListener('change', updateDisabledStates);
