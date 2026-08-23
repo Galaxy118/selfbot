@@ -249,7 +249,7 @@ function renderTokens(tokens) {
         renderActivities();
 
         // Interactive logic to disable fields
-        const updateDisabledStates = () => {
+        function updateDisabledStates() {
             const isActive = isActiveCheckbox.checked;
             const isVoice = joinVoiceCheckbox.checked;
             
