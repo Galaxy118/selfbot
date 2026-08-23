@@ -75,6 +75,10 @@ function renderTokens(tokens) {
 
         const channelInput = clone.querySelector('.channel-input');
         channelInput.value = token.channel_id || '';
+        
+        clone.querySelector('.join-voice-checkbox').checked = token.join_voice;
+        clone.querySelector('.mute-checkbox').checked = token.self_mute;
+        clone.querySelector('.deaf-checkbox').checked = token.self_deaf;
 
         // Add event listeners
         clone.querySelector('.delete-btn').addEventListener('click', () => handleDelete(token.id));
@@ -86,6 +90,7 @@ function renderTokens(tokens) {
             btn.textContent = '...';
             btn.disabled = true;
 
+            const joinChecked = card.querySelector('.join-voice-checkbox').checked;
             const muteChecked = card.querySelector('.mute-checkbox').checked;
             const deafChecked = card.querySelector('.deaf-checkbox').checked;
 
@@ -94,7 +99,8 @@ function renderTokens(tokens) {
                 guild_id: guildInput.value || null,
                 channel_id: channelInput.value || null,
                 self_mute: muteChecked,
-                self_deaf: deafChecked
+                self_deaf: deafChecked,
+                join_voice: joinChecked
             }).then(() => {
                 btn.textContent = 'Sauvegardé!';
                 btn.style.backgroundColor = '#10b981'; // success green
