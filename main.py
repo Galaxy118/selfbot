@@ -101,6 +101,10 @@ def init_db():
         c.execute("ALTER TABLE tokens ADD COLUMN rotation_interval INTEGER DEFAULT 30")
     except sqlite3.OperationalError:
         pass # Column exists
+    try:
+        c.execute("ALTER TABLE tokens ADD COLUMN rotate_status BOOLEAN DEFAULT 0")
+    except sqlite3.OperationalError:
+        pass # Column exists
     conn.commit()
     conn.close()
 
@@ -125,16 +129,17 @@ class DiscordManager:
             
         conn = sqlite3.connect(DB_PATH)
         c = conn.cursor()
-        c.execute("SELECT id, encrypted_token, status, guild_id, channel_id, self_mute, self_deaf, join_voice, is_active, activities_json, rotation_interval FROM tokens")
+        c.execute("SELECT id, encrypted_token, status, guild_id, channel_id, self_mute, self_deaf, join_voice, is_active, activities_json, rotation_interval, rotate_status FROM tokens")
         rows = c.fetchall()
         conn.close()
 
         for row in rows:
             activities = json.loads(row[9]) if row[9] else []
             rot_int = row[10] if row[10] else 30
-            self.start_bot(row[0], row[1], row[2], row[3], row[4], row[5], row[6], row[7], row[8], activities, rot_int)
+            rot_status = bool(row[11]) if row[11] is not None else False
+            self.start_bot(row[0], row[1], row[2], row[3], row[4], row[5], row[6], row[7], row[8], activities, rot_int, rot_status)
 
-    def start_bot(self, token_id, encrypted_token, status, guild_id, channel_id, self_mute, self_deaf, join_voice, is_active, activities, rotation_interval):
+    def start_bot(self, token_id, encrypted_token, status, guild_id, channel_id, self_mute, self_deaf, join_voice, is_active, activities, rotation_interval, rotate_status):
         self.stop_bot(token_id)
         if not is_active or not is_global_active():
             return
@@ -149,7 +154,8 @@ class DiscordManager:
             "join_voice": bool(join_voice),
             "is_active": bool(is_active),
             "activities": activities,
-            "rotation_interval": max(15, rotation_interval) # minimum 15 seconds
+            "rotation_interval": max(15, rotation_interval), # minimum 15 seconds
+            "rotate_status": bool(rotate_status)
         }
         task = asyncio.create_task(self.run_bot(token_id))
         self.tasks[token_id] = task
@@ -161,19 +167,19 @@ class DiscordManager:
         if token_id in self.bot_configs:
             del self.bot_configs[token_id]
 
-    async def update_bot(self, token_id, encrypted_token, status, guild_id, channel_id, self_mute, self_deaf, join_voice, is_active, activities, rotation_interval):
+    async def update_bot(self, token_id, encrypted_token, status, guild_id, channel_id, self_mute, self_deaf, join_voice, is_active, activities, rotation_interval, rotate_status):
         # Stop and restart completely if activities or interval changes to refresh the loop properly
         old_config = self.bot_configs.get(token_id, {})
-        activities_changed = old_config.get("activities") != activities or old_config.get("rotation_interval") != rotation_interval
+        activities_changed = old_config.get("activities") != activities or old_config.get("rotation_interval") != rotation_interval or old_config.get("rotate_status") != rotate_status
         
         if not is_active or not is_global_active() or activities_changed:
             self.stop_bot(token_id)
             if is_active and is_global_active():
-                self.start_bot(token_id, encrypted_token, status, guild_id, channel_id, self_mute, self_deaf, join_voice, is_active, activities, rotation_interval)
+                self.start_bot(token_id, encrypted_token, status, guild_id, channel_id, self_mute, self_deaf, join_voice, is_active, activities, rotation_interval, rotate_status)
             return
 
         if token_id not in self.tasks:
-            self.start_bot(token_id, encrypted_token, status, guild_id, channel_id, self_mute, self_deaf, join_voice, is_active, activities, rotation_interval)
+            self.start_bot(token_id, encrypted_token, status, guild_id, channel_id, self_mute, self_deaf, join_voice, is_active, activities, rotation_interval, rotate_status)
             return
 
         self.bot_configs[token_id] = {
@@ -263,7 +269,7 @@ class DiscordManager:
                     
                     # Prepare first activity
                     initial_activities = []
-                    if config.get("activities") and len(config["activities"]) > 0:
+                    if config.get("rotate_status") and config.get("activities") and len(config["activities"]) > 0:
                         initial_activities = [config["activities"][0]]
 
                     await ws.send(json.dumps({
@@ -284,7 +290,7 @@ class DiscordManager:
                     }))
                     
                     rotator_task = None
-                    if config.get("activities") and len(config["activities"]) > 1:
+                    if config.get("rotate_status") and config.get("activities") and len(config["activities"]) > 1:
                         async def activity_rotator(ws, interval, activities, status):
                             try:
                                 idx = 0
@@ -534,9 +540,9 @@ async def get_tokens(user: dict = Depends(get_current_user)):
     conn = sqlite3.connect(DB_PATH)
     c = conn.cursor()
     if user["is_admin"]:
-        c.execute("SELECT id, owner_id, status, guild_id, channel_id, self_mute, self_deaf, join_voice, is_active, bot_username, activities_json, rotation_interval FROM tokens")
+        c.execute("SELECT id, owner_id, status, guild_id, channel_id, self_mute, self_deaf, join_voice, is_active, bot_username, activities_json, rotation_interval, rotate_status FROM tokens")
     else:
-        c.execute("SELECT id, owner_id, status, guild_id, channel_id, self_mute, self_deaf, join_voice, is_active, bot_username, activities_json, rotation_interval FROM tokens WHERE owner_id = ?", (user["id"],))
+        c.execute("SELECT id, owner_id, status, guild_id, channel_id, self_mute, self_deaf, join_voice, is_active, bot_username, activities_json, rotation_interval, rotate_status FROM tokens WHERE owner_id = ?", (user["id"],))
     rows = c.fetchall()
     conn.close()
     
@@ -555,6 +561,7 @@ async def get_tokens(user: dict = Depends(get_current_user)):
             "is_active": bool(r[8]), "bot_username": r[9],
             "activities_json": json.loads(r[10]) if r[10] else [],
             "rotation_interval": r[11] if r[11] is not None else 30,
+            "rotate_status": bool(r[12]) if r[12] is not None else False,
             "is_connected": is_connected
         })
     return tokens
@@ -569,12 +576,13 @@ class TokenUpdate(BaseModel):
     is_active: Optional[bool] = None
     activities_json: Optional[list] = None
     rotation_interval: Optional[int] = None
+    rotate_status: Optional[bool] = None
 
 @app.put("/api/tokens/{token_id}")
 async def update_token(token_id: int, data: TokenUpdate, user: dict = Depends(get_current_user)):
     conn = sqlite3.connect(DB_PATH)
     c = conn.cursor()
-    c.execute("SELECT owner_id, encrypted_token, status, guild_id, channel_id, self_mute, self_deaf, join_voice, is_active, activities_json, rotation_interval FROM tokens WHERE id = ?", (token_id,))
+    c.execute("SELECT owner_id, encrypted_token, status, guild_id, channel_id, self_mute, self_deaf, join_voice, is_active, activities_json, rotation_interval, rotate_status FROM tokens WHERE id = ?", (token_id,))
     row = c.fetchone()
     if not row:
         conn.close()
@@ -594,14 +602,15 @@ async def update_token(token_id: int, data: TokenUpdate, user: dict = Depends(ge
     new_is_active = data.is_active if data.is_active is not None else row[8]
     new_activities = data.activities_json if data.activities_json is not None else (json.loads(row[9]) if row[9] else [])
     new_rot_int = data.rotation_interval if data.rotation_interval is not None else (row[10] if row[10] else 30)
+    new_rot_status = data.rotate_status if data.rotate_status is not None else (bool(row[11]) if row[11] is not None else False)
     
-    c.execute('''UPDATE tokens SET status = ?, guild_id = ?, channel_id = ?, self_mute = ?, self_deaf = ?, join_voice = ?, is_active = ?, activities_json = ?, rotation_interval = ? WHERE id = ?''', 
-              (new_status, new_guild_id, new_channel_id, new_self_mute, new_self_deaf, new_join_voice, new_is_active, json.dumps(new_activities), new_rot_int, token_id))
+    c.execute('''UPDATE tokens SET status = ?, guild_id = ?, channel_id = ?, self_mute = ?, self_deaf = ?, join_voice = ?, is_active = ?, activities_json = ?, rotation_interval = ?, rotate_status = ? WHERE id = ?''', 
+              (new_status, new_guild_id, new_channel_id, new_self_mute, new_self_deaf, new_join_voice, new_is_active, json.dumps(new_activities), new_rot_int, new_rot_status, token_id))
     conn.commit()
     conn.close()
     
     # Update bot dynamically
-    await bot_manager.update_bot(token_id, row[1], new_status, new_guild_id, new_channel_id, new_self_mute, new_self_deaf, new_join_voice, new_is_active, new_activities, new_rot_int)
+    await bot_manager.update_bot(token_id, row[1], new_status, new_guild_id, new_channel_id, new_self_mute, new_self_deaf, new_join_voice, new_is_active, new_activities, new_rot_int, new_rot_status)
     
     return {"message": "Token updated"}
 

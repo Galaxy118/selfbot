@@ -196,6 +196,9 @@ function renderTokens(tokens) {
         muteCheckbox.checked = token.self_mute;
         deafCheckbox.checked = token.self_deaf;
 
+        const rotateStatusCheckbox = clone.querySelector('.rotate-status-checkbox');
+        rotateStatusCheckbox.checked = token.rotate_status || false;
+
         const rotationInput = clone.querySelector('.rotation-interval-input');
         rotationInput.value = token.rotation_interval || 30;
 
@@ -245,6 +248,7 @@ function renderTokens(tokens) {
                 renderActivities();
             }
         });
+        rotateStatusCheckbox.addEventListener('change', updateDisabledStates);
         
         renderActivities();
 
@@ -252,9 +256,11 @@ function renderTokens(tokens) {
         function updateDisabledStates() {
             const isActive = isActiveCheckbox.checked;
             const isVoice = joinVoiceCheckbox.checked;
+            const isRotate = rotateStatusCheckbox.checked;
             
             statusSelect.disabled = !isActive;
             joinVoiceCheckbox.disabled = !isActive;
+            rotateStatusCheckbox.disabled = !isActive;
 
             const voiceFieldsDisabled = !(isActive && isVoice);
             guildInput.disabled = voiceFieldsDisabled;
@@ -262,15 +268,19 @@ function renderTokens(tokens) {
             muteCheckbox.disabled = voiceFieldsDisabled;
             deafCheckbox.disabled = voiceFieldsDisabled;
 
-            rotationInput.disabled = !isActive;
-            newActType.disabled = !isActive;
-            newActName.disabled = !isActive;
-            addActBtn.disabled = !isActive;
-            activitiesList.querySelectorAll('.remove-act-btn').forEach(btn => btn.disabled = !isActive);
+            const rotateFieldsDisabled = !(isActive && isRotate);
+            rotationInput.disabled = rotateFieldsDisabled;
+            newActType.disabled = rotateFieldsDisabled;
+            newActName.disabled = rotateFieldsDisabled;
+            addActBtn.disabled = rotateFieldsDisabled;
+            activitiesList.querySelectorAll('.remove-act-btn').forEach(btn => btn.disabled = rotateFieldsDisabled);
 
             // Toggle CSS classes for parent containers to ensure visual feedback
             statusSelect.parentElement.classList.toggle('disabled-field', !isActive);
-            rotationInput.parentElement.parentElement.parentElement.classList.toggle('disabled-field', !isActive);
+            rotateStatusCheckbox.parentElement.parentElement.parentElement.classList.toggle('disabled-field', !isActive);
+            clone.querySelector('.rotation-interval-wrapper').classList.toggle('disabled-field', rotateFieldsDisabled);
+            newActType.parentElement.classList.toggle('disabled-field', rotateFieldsDisabled);
+            activitiesList.classList.toggle('disabled-field', rotateFieldsDisabled);
             joinVoiceCheckbox.parentElement.classList.toggle('disabled-field', !isActive);
             
             guildInput.parentElement.classList.toggle('disabled-field', voiceFieldsDisabled);
@@ -307,7 +317,8 @@ function renderTokens(tokens) {
                 join_voice: joinChecked,
                 is_active: activeChecked,
                 activities_json: currentActivities,
-                rotation_interval: parseInt(rotationInput.value) || 30
+                rotation_interval: parseInt(rotationInput.value) || 30,
+                rotate_status: rotateStatusCheckbox.checked
             }).then(() => {
                 btn.textContent = 'Sauvegardé!';
                 btn.style.backgroundColor = '#10b981'; // success green

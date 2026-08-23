@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Selfbot Manager - Dashboard</title>
-    <link rel="stylesheet" href="/static/style.css?v=17">
+    <link rel="stylesheet" href="/static/style.css?v=18">
 </head>
 <body>
     <div class="container">
@@ -81,8 +81,12 @@
                 </div>
                 <div class="form-group" style="margin-top: 1rem; padding-top: 1rem; border-top: 1px solid var(--glass-border);">
                     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
-                        <label style="margin: 0;">Activités (Rotation)</label>
-                        <div style="display: flex; align-items: center; gap: 0.5rem;">
+                        <label class="switch-container" style="margin: 0;">
+                            <input type="checkbox" class="rotate-status-checkbox">
+                            <span class="switch-slider"></span>
+                            <b>Activités (Rotation)</b>
+                        </label>
+                        <div style="display: flex; align-items: center; gap: 0.5rem;" class="rotation-interval-wrapper">
                             <span style="font-size: 0.75rem; color: var(--text-secondary);">Intervalle (s):</span>
                             <input type="number" class="rotation-interval-input glass-input" value="30" min="15" style="width: 60px; padding: 0.25rem; font-size: 0.8rem;">
                         </div>
@@ -137,5 +141,5 @@
         </div>
     </template>
 
-    <script src="/static/script.js?v=17"></script></body>
+    <script src="/static/script.js?v=18"></script></body>
 </html>
