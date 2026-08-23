@@ -20,9 +20,11 @@ async function fetchUser() {
             currentUser = await res.json();
             const display = document.getElementById('username-display');
             if (currentUser.is_admin) {
-                display.innerHTML = `🛡️ Admin: <b>${currentUser.username}</b>`;
+                display.innerHTML = `🛡️ Admin: <b></b>`;
+                display.querySelector('b').textContent = currentUser.username;
             } else {
-                display.innerHTML = `👤 <b>${currentUser.username}</b>`;
+                display.innerHTML = `👤 <b></b>`;
+                display.querySelector('b').textContent = currentUser.username;
             }
         } else {
             window.location.href = '/';
@@ -103,10 +105,21 @@ function renderTokens(tokens) {
         card.style.animationDelay = `${index * 0.1}s`;
 
         const title = clone.querySelector('.token-id-display');
+        title.innerHTML = '';
         if (token.bot_username && token.bot_username !== "Unknown") {
-            title.innerHTML = `👤 ${token.bot_username} <span style="font-size: 0.8rem; color: #94a3b8;">(#${token.id})</span>`;
+            title.appendChild(document.createTextNode('👤 '));
+            
+            const spanUsername = document.createElement('span');
+            spanUsername.textContent = token.bot_username;
+            title.appendChild(spanUsername);
+            
+            const spanId = document.createElement('span');
+            spanId.style.fontSize = '0.8rem';
+            spanId.style.color = '#94a3b8';
+            spanId.textContent = ` (#${token.id})`;
+            title.appendChild(spanId);
         } else {
-            title.innerHTML = `Token #${token.id}`;
+            title.textContent = `Token #${token.id}`;
         }
         
         if (currentUser && currentUser.is_admin) {

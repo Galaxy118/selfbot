@@ -2,7 +2,18 @@
 
 # Ensure we are in the right directory
 APP_DIR=$(pwd)
-USER_NAME=$(whoami)
+
+# Security check: Do not run as root
+if [ "$SUDO_USER" == "root" ] || { [ -z "$SUDO_USER" ] && [ "$(whoami)" == "root" ]; }; then
+    echo "ERREUR : Pour des raisons de sécurité, le service ne doit pas être exécuté en tant que root."
+    echo "Veuillez exécuter ce script avec 'sudo ./setup_service.sh' depuis un compte utilisateur standard (ex: ubuntu)."
+    exit 1
+fi
+
+USER_NAME=$SUDO_USER
+if [ -z "$USER_NAME" ]; then
+    USER_NAME=$(whoami)
+fi
 
 echo "Creating systemd service file..."
 

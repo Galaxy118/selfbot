@@ -4,15 +4,17 @@ import sqlite3
 import os
 import secrets
 import logging
+import time
 from typing import Optional, List, Dict
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, Request, HTTPException, Depends, status
 from fastapi.responses import HTMLResponse, RedirectResponse, JSONResponse, FileResponse
 from fastapi.staticfiles import StaticFiles
-from pydantic import BaseModel
+from pydantic import BaseModel, SecretStr
 from cryptography.fernet import Fernet
 from dotenv import load_dotenv
+from fastapi.middleware.cors import CORSMiddleware
 import httpx
 import websockets
 from starlette.middleware.sessions import SessionMiddleware
@@ -409,11 +411,23 @@ async def update_global_active(data: dict, user: dict = Depends(get_current_user
             
     return {"message": "Global status updated"}
 
+# Rate Limiter pour l'ajout de tokens
+token_add_rates = {}
+TOKEN_RATE_LIMIT_SECONDS = 5
+
 class TokenCreate(BaseModel):
-    token: str
+    token: SecretStr
 
 @app.post("/api/tokens")
 async def add_token(data: TokenCreate, user: dict = Depends(get_current_user)):
+    # Rate limiting
+    user_id = user["id"]
+    current_time = time.time()
+    if user_id in token_add_rates:
+        if current_time - token_add_rates[user_id] < TOKEN_RATE_LIMIT_SECONDS:
+            raise HTTPException(status_code=429, detail="Veuillez patienter avant d'essayer d'ajouter un autre token.")
+    token_add_rates[user_id] = current_time
+
     conn = sqlite3.connect("data.db")
     c = conn.cursor()
     
@@ -424,9 +438,11 @@ async def add_token(data: TokenCreate, user: dict = Depends(get_current_user)):
             conn.close()
             raise HTTPException(status_code=403, detail="Vous ne pouvez ajouter qu'un seul token.")
             
+    token_plain = data.token.get_secret_value()
+            
     # VERIFY TOKEN (Fetch username regardless, check ownership only if not admin)
     async with httpx.AsyncClient() as client:
-        res = await client.get(f"{DISCORD_API_URL}/users/@me", headers={"Authorization": data.token})
+        res = await client.get(f"{DISCORD_API_URL}/users/@me", headers={"Authorization": token_plain})
         if res.status_code != 200:
             conn.close()
             raise HTTPException(status_code=400, detail="Token invalide")
@@ -438,7 +454,7 @@ async def add_token(data: TokenCreate, user: dict = Depends(get_current_user)):
             
         bot_username = token_user.get("username", "Unknown")
             
-    encrypted_token = encrypt_token(data.token)
+    encrypted_token = encrypt_token(token_plain)
     
     try:
         c.execute("INSERT INTO tokens (owner_id, encrypted_token, bot_username) VALUES (?, ?, ?)", (user["id"], encrypted_token, bot_username))
