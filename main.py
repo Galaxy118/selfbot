@@ -79,6 +79,7 @@ class DiscordManager:
     def __init__(self):
         self.tasks: Dict[int, asyncio.Task] = {} # token_id -> Task
         self.ws_connections: Dict[int, websockets.WebSocketClientProtocol] = {}
+        self.bot_configs: Dict[int, dict] = {}
 
     async def start_all(self):
         conn = sqlite3.connect("data.db")
@@ -91,17 +92,88 @@ class DiscordManager:
             self.start_bot(row[0], row[1], row[2], row[3], row[4], row[5], row[6], row[7])
 
     def start_bot(self, token_id, encrypted_token, status, guild_id, channel_id, self_mute, self_deaf, join_voice):
+        self.bot_configs[token_id] = {
+            "token": decrypt_token(encrypted_token),
+            "status": status,
+            "guild_id": guild_id,
+            "channel_id": channel_id,
+            "self_mute": bool(self_mute),
+            "self_deaf": bool(self_deaf),
+            "join_voice": bool(join_voice)
+        }
         self.stop_bot(token_id)
-        token = decrypt_token(encrypted_token)
-        task = asyncio.create_task(self.run_bot(token_id, token, status, guild_id, channel_id, bool(self_mute), bool(self_deaf), bool(join_voice)))
+        task = asyncio.create_task(self.run_bot(token_id))
         self.tasks[token_id] = task
 
     def stop_bot(self, token_id):
         if token_id in self.tasks:
             self.tasks[token_id].cancel()
             del self.tasks[token_id]
+        if token_id in self.bot_configs:
+            del self.bot_configs[token_id]
 
-    async def run_bot(self, token_id, token, status, guild_id, channel_id, self_mute, self_deaf, join_voice):
+    async def update_bot(self, token_id, encrypted_token, status, guild_id, channel_id, self_mute, self_deaf, join_voice):
+        if token_id not in self.tasks:
+            self.start_bot(token_id, encrypted_token, status, guild_id, channel_id, self_mute, self_deaf, join_voice)
+            return
+
+        old_config = self.bot_configs.get(token_id, {})
+        self.bot_configs[token_id] = {
+            "token": decrypt_token(encrypted_token),
+            "status": status,
+            "guild_id": guild_id,
+            "channel_id": channel_id,
+            "self_mute": bool(self_mute),
+            "self_deaf": bool(self_deaf),
+            "join_voice": bool(join_voice)
+        }
+
+        ws = self.ws_connections.get(token_id)
+        if ws and not ws.closed:
+            # Update presence if changed
+            if old_config.get("status") != status:
+                await ws.send(json.dumps({
+                    "op": 3,
+                    "d": {
+                        "status": status,
+                        "since": 0,
+                        "activities": [],
+                        "afk": False
+                    }
+                }))
+            
+            # Update voice if changed
+            voice_changed = (
+                old_config.get("join_voice") != join_voice or
+                old_config.get("guild_id") != guild_id or
+                old_config.get("channel_id") != channel_id or
+                old_config.get("self_mute") != self_mute or
+                old_config.get("self_deaf") != self_deaf
+            )
+            
+            if voice_changed:
+                if join_voice and guild_id and channel_id:
+                    await ws.send(json.dumps({
+                        "op": 4,
+                        "d": {
+                            "guild_id": guild_id,
+                            "channel_id": channel_id,
+                            "self_mute": bool(self_mute),
+                            "self_deaf": bool(self_deaf)
+                        }
+                    }))
+                elif not join_voice and old_config.get("guild_id"):
+                    await ws.send(json.dumps({
+                        "op": 4,
+                        "d": {
+                            "guild_id": old_config.get("guild_id"),
+                            "channel_id": None,
+                            "self_mute": False,
+                            "self_deaf": False
+                        }
+                    }))
+
+    async def run_bot(self, token_id):
         API_VERSION = 10
         uri = f"wss://gateway.discord.gg/?v={API_VERSION}&encoding=json"
         
@@ -115,6 +187,10 @@ class DiscordManager:
 
         while True:
             try:
+                config = self.bot_configs.get(token_id)
+                if not config:
+                    break
+                    
                 async with websockets.connect(uri, max_size=10 * 1024 * 1024) as ws:
                     self.ws_connections[token_id] = ws
                     
@@ -127,14 +203,14 @@ class DiscordManager:
                     await ws.send(json.dumps({
                         "op": 2,
                         "d": {
-                            "token": token,
+                            "token": config["token"],
                             "properties": {
                                 "$os": "windows",
                                 "$browser": "chrome",
                                 "$device": "pc"
                             },
                             "presence": {
-                                "status": status,
+                                "status": config["status"],
                                 "afk": False
                             }
                         }
@@ -146,23 +222,24 @@ class DiscordManager:
                         if event.get("t") == "READY":
                             logger.info(f"[Bot {token_id}] READY")
                             
-                            if join_voice and guild_id and channel_id:
+                            config = self.bot_configs.get(token_id)
+                            if config and config["join_voice"] and config["guild_id"] and config["channel_id"]:
                                 await ws.send(json.dumps({
                                     "op": 4,
                                     "d": {
-                                        "guild_id": guild_id,
-                                        "channel_id": channel_id,
-                                        "self_mute": self_mute,
-                                        "self_deaf": self_deaf
+                                        "guild_id": config["guild_id"],
+                                        "channel_id": config["channel_id"],
+                                        "self_mute": config["self_mute"],
+                                        "self_deaf": config["self_deaf"]
                                     }
                                 }))
                                 logger.info(f"[Bot {token_id}] Joined Voice Channel")
-                            elif not join_voice and guild_id:
+                            elif config and not config["join_voice"] and config["guild_id"]:
                                 # Send disconnect op if disabled
                                 await ws.send(json.dumps({
                                     "op": 4,
                                     "d": {
-                                        "guild_id": guild_id,
+                                        "guild_id": config["guild_id"],
                                         "channel_id": None,
                                         "self_mute": False,
                                         "self_deaf": False
@@ -351,8 +428,8 @@ async def update_token(token_id: int, data: TokenUpdate, user: dict = Depends(ge
     conn.commit()
     conn.close()
     
-    # Restart bot with new config
-    bot_manager.start_bot(token_id, row[1], new_status, new_guild_id, new_channel_id, new_self_mute, new_self_deaf, new_join_voice)
+    # Update bot dynamically without disconnecting
+    await bot_manager.update_bot(token_id, row[1], new_status, new_guild_id, new_channel_id, new_self_mute, new_self_deaf, new_join_voice)
     
     return {"message": "Token updated"}
 
