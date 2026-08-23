@@ -129,7 +129,7 @@ class DiscordManager:
         }
 
         ws = self.ws_connections.get(token_id)
-        if ws and not ws.closed:
+        if ws and ws.state.name == "OPEN":
             # Update presence if changed
             if old_config.get("status") != status:
                 await ws.send(json.dumps({
