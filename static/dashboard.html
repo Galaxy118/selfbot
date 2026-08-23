@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Selfbot Manager - Dashboard</title>
-    <link rel="stylesheet" href="/static/style.css?v=10">
+    <link rel="stylesheet" href="/static/style.css?v=11">
 </head>
 <body>
     <div class="container">
@@ -53,7 +53,10 @@
             <div class="token-header">
                 <div class="token-header-info">
                     <h3 class="token-id-display"></h3>
-                    <span class="owner-badge hidden">Propriétaire: <span class="t-owner"></span></span>
+                    <div style="display: flex; gap: 0.5rem; align-items: center; margin-top: 0.25rem;">
+                        <span class="owner-badge hidden">Propriétaire: <span class="t-owner"></span></span>
+                        <span class="connection-status-badge"></span>
+                    </div>
                 </div>
                 <button class="glass-button glass-button-danger delete-btn" title="Supprimer">✖</button>
             </div>
@@ -109,6 +112,6 @@
         </div>
     </template>
 
-    <script src="/static/script.js?v=10"></script>
+    <script src="/static/script.js?v=11"></script>
 </body>
 </html>

@@ -484,7 +484,21 @@ async def get_tokens(user: dict = Depends(get_current_user)):
     rows = c.fetchall()
     conn.close()
     
-    tokens = [{"id": r[0], "owner_id": r[1], "status": r[2], "guild_id": r[3], "channel_id": r[4], "self_mute": bool(r[5]), "self_deaf": bool(r[6]), "join_voice": bool(r[7]), "is_active": bool(r[8]), "bot_username": r[9]} for r in rows]
+    tokens = []
+    for r in rows:
+        token_id = r[0]
+        is_connected = False
+        if token_id in bot_manager.ws_connections:
+            ws = bot_manager.ws_connections[token_id]
+            if ws.state.name == "OPEN":
+                is_connected = True
+                
+        tokens.append({
+            "id": r[0], "owner_id": r[1], "status": r[2], "guild_id": r[3], "channel_id": r[4], 
+            "self_mute": bool(r[5]), "self_deaf": bool(r[6]), "join_voice": bool(r[7]), 
+            "is_active": bool(r[8]), "bot_username": r[9],
+            "is_connected": is_connected
+        })
     return tokens
 
 class TokenUpdate(BaseModel):

@@ -128,6 +128,23 @@ function renderTokens(tokens) {
             clone.querySelector('.t-owner').textContent = token.owner_id;
         }
 
+        const connBadge = clone.querySelector('.connection-status-badge');
+        connBadge.style.fontSize = '0.75rem';
+        connBadge.style.fontWeight = '500';
+        connBadge.style.padding = '2px 6px';
+        connBadge.style.borderRadius = '4px';
+        if (token.is_connected) {
+            connBadge.textContent = '🟢 Connecté';
+            connBadge.style.backgroundColor = 'rgba(50, 215, 75, 0.15)';
+            connBadge.style.color = 'var(--accent-success)';
+            connBadge.style.border = '1px solid rgba(50, 215, 75, 0.3)';
+        } else {
+            connBadge.textContent = '🔴 Déconnecté';
+            connBadge.style.backgroundColor = 'rgba(255, 69, 58, 0.15)';
+            connBadge.style.color = 'var(--accent-error)';
+            connBadge.style.border = '1px solid rgba(255, 69, 58, 0.3)';
+        }
+
         const statusSelect = clone.querySelector('.status-select');
         statusSelect.value = token.status;
 
