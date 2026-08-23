@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Selfbot Manager - Dashboard</title>
+    <link rel="stylesheet" href="/static/style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body class="dashboard-page">
+    <div class="background-blobs">
+        <div class="blob blob-1"></div>
+        <div class="blob blob-2"></div>
+    </div>
+    
+    <nav class="glass-nav">
+        <div class="nav-brand">Selfbot Manager</div>
+        <div class="nav-user">
+            <span id="username-display">Chargement...</span>
+            <a href="/auth/logout" class="logout-btn">Déconnexion</a>
+        </div>
+    </nav>
+
+    <main class="container">
+        <section class="glass-panel add-token-section">
+            <h2>Ajouter un Token</h2>
+            <p class="subtitle">Le token doit appartenir au compte Discord avec lequel vous êtes connecté.</p>
+            <form id="add-token-form">
+                <div class="input-group">
+                    <input type="password" id="new-token-input" placeholder="Collez votre token ici..." required autocomplete="off">
+                    <button type="submit" class="btn primary-btn" id="add-btn">
+                        <span class="btn-text">Ajouter</span>
+                        <div class="loader hidden"></div>
+                    </button>
+                </div>
+                <div id="add-error" class="error-msg"></div>
+            </form>
+        </section>
+
+        <section class="tokens-section">
+            <div class="section-header">
+                <h2>Vos Selfbots</h2>
+                <button class="btn secondary-btn" onclick="fetchTokens()">Actualiser</button>
+            </div>
+            
+            <div id="tokens-grid" class="tokens-grid">
+                <!-- Tokens will be injected here via JS -->
+            </div>
+        </section>
+    </main>
+
+    <!-- Template for a token card -->
+    <template id="token-card-template">
+        <div class="glass-panel token-card">
+            <div class="token-header">
+                <h3 class="token-id-display">Token #<span class="t-id"></span></h3>
+                <span class="owner-badge hidden">Admin View - Owner: <span class="t-owner"></span></span>
+                <button class="delete-btn" title="Supprimer le token">&times;</button>
+            </div>
+            <div class="token-body">
+                <div class="form-group">
+                    <label>Statut</label>
+                    <select class="status-select">
+                        <option value="online">En ligne</option>
+                        <option value="idle">Inactif</option>
+                        <option value="dnd">Ne pas déranger</option>
+                        <option value="invisible">Invisible</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>ID du Serveur (Guild)</label>
+                    <input type="text" class="guild-input" placeholder="Ex: 1389905436680917044">
+                </div>
+                <div class="form-group">
+                    <label>ID du Salon Vocal</label>
+                    <input type="text" class="channel-input" placeholder="Ex: 1469426143471075440">
+                </div>
+                <div class="form-checkboxes">
+                    <label class="checkbox-container">
+                        <input type="checkbox" class="mute-checkbox">
+                        <span class="checkmark"></span> Mute
+                    </label>
+                    <label class="checkbox-container">
+                        <input type="checkbox" class="deaf-checkbox">
+                        <span class="checkmark"></span> Sourd
+                    </label>
+                </div>
+                <button class="btn primary-btn update-btn">Enregistrer</button>
+            </div>
+        </div>
+    </template>
+
+    <script src="/static/script.js"></script>
+</body>
+</html>

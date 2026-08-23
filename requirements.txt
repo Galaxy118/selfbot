@@ -1,0 +1,8 @@
+requests
+websockets
+fastapi
+uvicorn
+cryptography
+python-dotenv
+httpx
+itsdangerous
