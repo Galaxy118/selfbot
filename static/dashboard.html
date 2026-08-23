@@ -4,76 +4,72 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Selfbot Manager - Dashboard</title>
-    <link rel="stylesheet" href="/static/style.css?v=2">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/static/style.css?v=8">
 </head>
-<body class="dashboard-page">
-    <div class="background-blobs">
-        <div class="blob blob-1"></div>
-        <div class="blob blob-2"></div>
-    </div>
-    
-    <nav class="glass-nav">
-        <div class="nav-brand">Selfbot Manager</div>
-        <div class="nav-user">
-            <span id="username-display">Chargement...</span>
-            <a href="/auth/logout" class="logout-btn">Déconnexion</a>
-        </div>
-    </nav>
-
-    <main class="container">
-        <section class="glass-panel add-token-section">
-            <h2>Ajouter un Token</h2>
-            <p class="subtitle">Le token doit appartenir au compte Discord avec lequel vous êtes connecté.</p>
-            <form id="add-token-form">
-                <div class="input-group">
-                    <input type="password" id="new-token-input" placeholder="Collez votre token ici..." required autocomplete="off">
-                    <button type="submit" class="btn primary-btn" id="add-btn">
-                        <span class="btn-text">Ajouter</span>
-                        <div class="loader hidden"></div>
-                    </button>
-                </div>
-                <div id="add-error" class="error-msg"></div>
-            </form>
-        </section>
-
-        <div id="admin-panel" style="display: none; background: rgba(255,255,255,0.05); padding: 15px 20px; border-radius: 12px; margin-bottom: 20px; border: 1px solid rgba(255,255,255,0.1); justify-content: space-between; align-items: center;">
-            <div style="display: flex; align-items: center; gap: 10px;">
-                <h3 style="margin: 0; font-size: 1.1rem; color: #f87171;">🛠️ Administration Globale</h3>
-                <span style="font-size: 0.85rem; color: #94a3b8;">(Désactiver arrêtera tous les bots instantanément)</span>
+<body>
+    <div class="container">
+        <header class="glass-panel" style="margin-bottom: 2rem; border-radius: var(--radius-md); padding: 1rem 2rem; border: 1px solid var(--glass-border); display: flex; justify-content: space-between; align-items: center;">
+            <div class="logo-container">
+                <h1 style="margin: 0; font-size: 1.5rem;"><span>◆</span> Selfbot Panel</h1>
             </div>
-            <label class="switch">
+            <div class="user-info">
+                <span id="username-display"></span>
+                <a href="/auth/logout" class="glass-button glass-button-danger">Déconnexion</a>
+            </div>
+        </header>
+
+        <div id="admin-panel" class="admin-panel glass-panel" style="display: none;">
+            <div style="flex-grow: 1;">
+                <h3 style="color: var(--accent-error);">🛡️ Panneau d'Administration</h3>
+                <p style="font-size: 0.85rem; color: var(--text-secondary); margin-top: 5px;">Désactiver arrêtera tous les bots instantanément.</p>
+            </div>
+            <label class="switch-container">
                 <input type="checkbox" id="global-active-toggle">
-                <span class="slider round"></span>
+                <span class="switch-slider"></span>
             </label>
         </div>
 
-        <section class="tokens-section">
-            <div class="section-header">
-                <h2>Vos Selfbots</h2>
-                <button class="btn secondary-btn" onclick="fetchTokens()">Actualiser</button>
-            </div>
-            
-            <div id="tokens-grid" class="tokens-grid">
-                <!-- Tokens will be injected here via JS -->
-            </div>
-        </section>
-    </main>
+        <div class="add-token-section glass-panel">
+            <h2>Ajouter un Token</h2>
+            <p style="color: var(--text-secondary); font-size: 0.9rem; margin-top: 0.5rem;">Collez votre token Discord ci-dessous pour démarrer un nouveau selfbot.</p>
+            <form id="add-token-form" class="add-token-form">
+                <input type="password" id="new-token-input" class="glass-input" placeholder="Ex: MTEyMzQ1..." required autocomplete="off">
+                <button type="submit" id="add-btn" class="glass-button glass-button-primary">
+                    <span class="btn-text">Ajouter</span>
+                    <div class="loader hidden"></div>
+                </button>
+            </form>
+            <span id="add-error" class="error-msg"></span>
+        </div>
+
+        <div id="tokens-grid" class="grid">
+            <!-- Tokens will be injected here via JS -->
+        </div>
+    </div>
 
     <!-- Template for a token card -->
     <template id="token-card-template">
-        <div class="glass-panel token-card">
+        <div class="token-card glass-panel">
             <div class="token-header">
-                <div class="token-header-info" style="display: flex; flex-direction: column; gap: 4px; max-width: 85%;">
-                    <h3 class="token-id-display" style="margin: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">Token #<span class="t-id"></span></h3>
+                <div class="token-header-info">
+                    <h3 class="token-id-display"></h3>
                     <span class="owner-badge hidden">Propriétaire: <span class="t-owner"></span></span>
                 </div>
-                <button class="delete-btn" title="Supprimer le token">&times;</button>
+                <button class="glass-button glass-button-danger delete-btn" title="Supprimer">✖</button>
             </div>
+            
             <div class="token-body">
+                <div class="form-group" style="margin-bottom: 1rem;">
+                    <label class="switch-container">
+                        <input type="checkbox" class="is-active-checkbox">
+                        <span class="switch-slider"></span>
+                        <b>Activer le compte</b>
+                    </label>
+                </div>
+                
                 <div class="form-group">
                     <label>Statut</label>
-                    <select class="status-select">
+                    <select class="status-select glass-input">
                         <option value="online">En ligne</option>
                         <option value="idle">Inactif</option>
                         <option value="dnd">Ne pas déranger</option>
@@ -81,38 +77,34 @@
                     </select>
                 </div>
                 <div class="form-group">
-                    <label>ID du Serveur (Guild)</label>
-                    <input type="text" class="guild-input" placeholder="Ex: 1389905436680917044">
+                    <label>Serveur Vocal (ID)</label>
+                    <input type="text" class="guild-input glass-input" placeholder="ID du serveur">
                 </div>
                 <div class="form-group">
-                    <label>ID du Salon Vocal</label>
-                    <input type="text" class="channel-input" placeholder="Ex: 1469426143471075440">
+                    <label>Salon Vocal (ID)</label>
+                    <input type="text" class="channel-input glass-input" placeholder="ID du salon">
                 </div>
-                <div class="form-checkboxes" style="flex-wrap: wrap; margin-bottom: 10px;">
-                    <label class="checkbox-container">
-                        <input type="checkbox" class="is-active-checkbox">
-                        <span class="checkmark"></span> Activer le Bot
-                    </label>
-                </div>
-                <div class="form-checkboxes" style="flex-wrap: wrap;">
-                    <label class="checkbox-container">
+                
+                <div class="toggles-grid">
+                    <label class="switch-container">
                         <input type="checkbox" class="join-voice-checkbox">
-                        <span class="checkmark"></span> Activer Vocal
+                        <span class="switch-slider"></span> Activer Vocal
                     </label>
-                    <label class="checkbox-container">
+                    <label class="switch-container">
                         <input type="checkbox" class="mute-checkbox">
-                        <span class="checkmark"></span> Mute
+                        <span class="switch-slider"></span> Mute
                     </label>
-                    <label class="checkbox-container">
+                    <label class="switch-container">
                         <input type="checkbox" class="deaf-checkbox">
-                        <span class="checkmark"></span> Sourd
+                        <span class="switch-slider"></span> Sourd
                     </label>
                 </div>
-                <button class="btn primary-btn update-btn">Enregistrer</button>
+                
+                <button class="glass-button glass-button-primary update-btn" style="margin-top: 1rem; width: 100%;">Enregistrer les modifications</button>
             </div>
         </div>
     </template>
 
-    <script src="/static/script.js?v=6"></script>
+    <script src="/static/script.js?v=8"></script>
 </body>
 </html>
