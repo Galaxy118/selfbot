@@ -10,6 +10,37 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (addForm) {
             addForm.addEventListener('submit', handleAddToken);
         }
+
+        // Auto-polling for connection status (every 5 seconds)
+        setInterval(async () => {
+            try {
+                const res = await fetch('/api/tokens');
+                if (res.ok) {
+                    const tokens = await res.json();
+                    tokens.forEach(token => {
+                        const card = document.getElementById(`token-card-${token.id}`);
+                        if (card) {
+                            const connBadge = card.querySelector('.connection-status-badge');
+                            if (connBadge) {
+                                if (token.is_connected) {
+                                    connBadge.textContent = '🟢 Connecté';
+                                    connBadge.style.backgroundColor = 'rgba(50, 215, 75, 0.15)';
+                                    connBadge.style.color = 'var(--accent-success)';
+                                    connBadge.style.border = '1px solid rgba(50, 215, 75, 0.3)';
+                                } else {
+                                    connBadge.textContent = '🔴 Déconnecté';
+                                    connBadge.style.backgroundColor = 'rgba(255, 69, 58, 0.15)';
+                                    connBadge.style.color = 'var(--accent-error)';
+                                    connBadge.style.border = '1px solid rgba(255, 69, 58, 0.3)';
+                                }
+                            }
+                        }
+                    });
+                }
+            } catch (e) {
+                console.error('Erreur lors de l\\'actualisation des statuts', e);
+            }
+        }, 5000);
     }
 });
 
@@ -102,6 +133,7 @@ function renderTokens(tokens) {
     tokens.forEach((token, index) => {
         const clone = template.content.cloneNode(true);
         const card = clone.querySelector('.token-card');
+        card.id = `token-card-${token.id}`;
         card.style.animationDelay = `${index * 0.1}s`;
 
         const title = clone.querySelector('.token-id-display');
