@@ -92,6 +92,7 @@ def init_db():
     try:
         c.execute("ALTER TABLE tokens ADD COLUMN bot_username TEXT")
     except sqlite3.OperationalError:
+        pass # Column exists
     try:
         c.execute("ALTER TABLE tokens ADD COLUMN activities_json TEXT DEFAULT '[]'")
     except sqlite3.OperationalError:
