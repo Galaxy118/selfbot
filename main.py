@@ -414,29 +414,39 @@ class TokenCreate(BaseModel):
 
 @app.post("/api/tokens")
 async def add_token(data: TokenCreate, user: dict = Depends(get_current_user)):
-    # VERIFY TOKEN OWNERSHIP
+    conn = sqlite3.connect("data.db")
+    c = conn.cursor()
+    
+    if not user["is_admin"]:
+        # Check if user already has a token
+        c.execute("SELECT COUNT(*) FROM tokens WHERE owner_id = ?", (user["id"],))
+        if c.fetchone()[0] >= 1:
+            conn.close()
+            raise HTTPException(status_code=403, detail="Vous ne pouvez ajouter qu'un seul token.")
+            
+    # VERIFY TOKEN (Fetch username regardless, check ownership only if not admin)
     async with httpx.AsyncClient() as client:
         res = await client.get(f"{DISCORD_API_URL}/users/@me", headers={"Authorization": data.token})
         if res.status_code != 200:
-            raise HTTPException(status_code=400, detail="Invalid token")
+            conn.close()
+            raise HTTPException(status_code=400, detail="Token invalide")
             
         token_user = res.json()
-        if token_user["id"] != user["id"]:
-            raise HTTPException(status_code=403, detail="This token does not belong to your Discord account.")
+        if not user["is_admin"] and token_user["id"] != user["id"]:
+            conn.close()
+            raise HTTPException(status_code=403, detail="Ce token n'appartient pas à votre compte Discord.")
             
         bot_username = token_user.get("username", "Unknown")
             
     encrypted_token = encrypt_token(data.token)
     
-    conn = sqlite3.connect("data.db")
-    c = conn.cursor()
     try:
         c.execute("INSERT INTO tokens (owner_id, encrypted_token, bot_username) VALUES (?, ?, ?)", (user["id"], encrypted_token, bot_username))
         token_id = c.lastrowid
         conn.commit()
     except Exception as e:
         conn.close()
-        raise HTTPException(status_code=400, detail="Error saving token")
+        raise HTTPException(status_code=400, detail="Erreur lors de l'enregistrement du token")
         
     conn.close()
     

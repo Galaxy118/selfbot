@@ -78,8 +78,18 @@ function renderTokens(tokens) {
 
     if (tokens.length === 0) {
         grid.innerHTML = '<p style="color: #94a3b8; grid-column: 1/-1; text-align: center; padding: 2rem;">Aucun selfbot configuré. Ajoutez votre premier token ci-dessus !</p>';
-        return;
     }
+
+    const addSection = document.querySelector('.add-token-section');
+    if (addSection) {
+        if (!currentUser.is_admin && tokens.length >= 1) {
+            addSection.style.display = 'none';
+        } else {
+            addSection.style.display = 'block';
+        }
+    }
+
+    if (tokens.length === 0) return;
 
     tokens.forEach((token, index) => {
         const clone = template.content.cloneNode(true);
