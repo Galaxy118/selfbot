@@ -258,6 +258,47 @@ select option {
 .slider:before { position: absolute; content: ""; height: 16px; width: 16px; left: 4px; bottom: 4px; background-color: white; transition: .4s; border-radius: 50%; box-shadow: 0 2px 4px rgba(0,0,0,0.2); }
 input:checked + .slider { background-color: #10b981; }
 input:focus + .slider { box-shadow: 0 0 1px #10b981; }
+
+/* Single Mode for Standard Users */
+.tokens-grid.single-mode {
+    grid-template-columns: 1fr;
+    max-width: 650px;
+    margin: 0 auto;
+}
+.tokens-grid.single-mode .token-card {
+    padding: 30px;
+}
+.tokens-grid.single-mode .token-header h3 {
+    font-size: 1.4rem;
+}
+.tokens-grid.single-mode .form-group label {
+    font-size: 1.05rem;
+}
+.tokens-grid.single-mode .form-group input,
+.tokens-grid.single-mode .form-group select {
+    font-size: 1.1rem;
+    padding: 14px;
+}
+.tokens-grid.single-mode .checkbox-container {
+    font-size: 1.1rem;
+    padding-left: 35px;
+    margin-right: 25px;
+}
+.tokens-grid.single-mode .checkmark {
+    height: 24px;
+    width: 24px;
+}
+.tokens-grid.single-mode .checkbox-container .checkmark:after {
+    left: 8px;
+    top: 4px;
+    width: 6px;
+    height: 12px;
+}
+.tokens-grid.single-mode .btn.update-btn {
+    font-size: 1.1rem;
+    padding: 14px;
+    margin-top: 15px;
+}
 input:checked + .slider:before { transform: translateX(20px); }
 
 .primary-btn {

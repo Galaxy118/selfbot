@@ -76,6 +76,12 @@ function renderTokens(tokens) {
     grid.innerHTML = '';
     const template = document.getElementById('token-card-template');
 
+    if (!currentUser.is_admin) {
+        grid.classList.add('single-mode');
+    } else {
+        grid.classList.remove('single-mode');
+    }
+
     if (tokens.length === 0) {
         grid.innerHTML = '<p style="color: #94a3b8; grid-column: 1/-1; text-align: center; padding: 2rem;">Aucun selfbot configuré. Ajoutez votre premier token ci-dessus !</p>';
     }
