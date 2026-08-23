@@ -64,8 +64,10 @@
     <template id="token-card-template">
         <div class="glass-panel token-card">
             <div class="token-header">
-                <h3 class="token-id-display">Token #<span class="t-id"></span></h3>
-                <span class="owner-badge hidden">Admin View - Owner: <span class="t-owner"></span></span>
+                <div class="token-header-info" style="display: flex; flex-direction: column; gap: 4px; max-width: 85%;">
+                    <h3 class="token-id-display" style="margin: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">Token #<span class="t-id"></span></h3>
+                    <span class="owner-badge hidden">Propriétaire: <span class="t-owner"></span></span>
+                </div>
                 <button class="delete-btn" title="Supprimer le token">&times;</button>
             </div>
             <div class="token-body">
