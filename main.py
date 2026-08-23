@@ -92,6 +92,7 @@ class DiscordManager:
             self.start_bot(row[0], row[1], row[2], row[3], row[4], row[5], row[6], row[7])
 
     def start_bot(self, token_id, encrypted_token, status, guild_id, channel_id, self_mute, self_deaf, join_voice):
+        self.stop_bot(token_id)
         self.bot_configs[token_id] = {
             "token": decrypt_token(encrypted_token),
             "status": status,
@@ -101,7 +102,6 @@ class DiscordManager:
             "self_deaf": bool(self_deaf),
             "join_voice": bool(join_voice)
         }
-        self.stop_bot(token_id)
         task = asyncio.create_task(self.run_bot(token_id))
         self.tasks[token_id] = task
 
