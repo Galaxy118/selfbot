@@ -1,8 +1,9 @@
 #!/bin/bash
 
 # Création de l'environnement virtuel s'il n'existe pas
-if [ ! -d "venv" ]; then
+if [ ! -f "venv/bin/activate" ]; then
     echo "Creating virtual environment..."
+    rm -rf venv
     # Sur Ubuntu, python3-venv est nécessaire
     if ! python3 -m venv venv; then
         echo "Error: Failed to create virtual environment."
