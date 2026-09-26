@@ -464,7 +464,7 @@ async def add_token(data: TokenCreate, user: dict = Depends(get_current_user)):
     conn.close()
     
     # Start bot
-    bot_manager.start_bot(token_id, encrypted_token, 'online', None, None, True, False, False, True)
+    bot_manager.start_bot(token_id, encrypted_token, 'online', None, None, True, False, False, True, [], 30, False)
     return {"message": "Token added successfully"}
 
 @app.get("/api/tokens")
