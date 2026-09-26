@@ -4,7 +4,11 @@
 if [ ! -d "venv" ]; then
     echo "Creating virtual environment..."
     # Sur Ubuntu, python3-venv est nécessaire
-    python3 -m venv venv
+    if ! python3 -m venv venv; then
+        echo "Error: Failed to create virtual environment."
+        echo "Please install python3-venv by running: sudo apt update && sudo apt install -y python3-venv python3-full"
+        exit 1
+    fi
 fi
 
 # Activation de l'environnement virtuel
