@@ -11,36 +11,42 @@ document.addEventListener('DOMContentLoaded', async () => {
             addForm.addEventListener('submit', handleAddToken);
         }
 
-        // Auto-polling for connection status (every 5 seconds)
-        setInterval(async () => {
-            try {
-                const res = await fetch('/api/tokens');
-                if (res.ok) {
-                    const tokens = await res.json();
-                    tokens.forEach(token => {
-                        const card = document.getElementById(`token-card-${token.id}`);
-                        if (card) {
-                            const connBadge = card.querySelector('.connection-status-badge');
-                            if (connBadge) {
-                                if (token.is_connected) {
-                                    connBadge.textContent = '🟢 Connecté';
-                                    connBadge.style.backgroundColor = 'rgba(50, 215, 75, 0.15)';
-                                    connBadge.style.color = 'var(--accent-success)';
-                                    connBadge.style.border = '1px solid rgba(50, 215, 75, 0.3)';
-                                } else {
-                                    connBadge.textContent = '🔴 Déconnecté';
-                                    connBadge.style.backgroundColor = 'rgba(255, 69, 58, 0.15)';
-                                    connBadge.style.color = 'var(--accent-error)';
-                                    connBadge.style.border = '1px solid rgba(255, 69, 58, 0.3)';
+        // Server-Sent Events (SSE) for real-time connection status
+        const evtSource = new EventSource('/api/stream');
+        evtSource.onmessage = async (event) => {
+            if (event.data === "update") {
+                try {
+                    const res = await fetch('/api/tokens');
+                    if (res.ok) {
+                        const tokens = await res.json();
+                        tokens.forEach(token => {
+                            const card = document.getElementById(`token-card-${token.id}`);
+                            if (card) {
+                                const connBadge = card.querySelector('.connection-status-badge');
+                                if (connBadge) {
+                                    if (token.is_connected) {
+                                        connBadge.textContent = '🟢 Connecté';
+                                        connBadge.style.backgroundColor = 'rgba(50, 215, 75, 0.15)';
+                                        connBadge.style.color = 'var(--accent-success)';
+                                        connBadge.style.border = '1px solid rgba(50, 215, 75, 0.3)';
+                                    } else {
+                                        connBadge.textContent = '🔴 Déconnecté';
+                                        connBadge.style.backgroundColor = 'rgba(255, 69, 58, 0.15)';
+                                        connBadge.style.color = 'var(--accent-error)';
+                                        connBadge.style.border = '1px solid rgba(255, 69, 58, 0.3)';
+                                    }
                                 }
                             }
-                        }
-                    });
+                        });
+                    }
+                } catch (e) {
+                    console.error("Erreur lors de l'actualisation des statuts via SSE", e);
                 }
-            } catch (e) {
-                console.error("Erreur lors de l'actualisation des statuts", e);
             }
-        }, 5000);
+        };
+        evtSource.onerror = (err) => {
+            console.error("EventSource failed:", err);
+        };
     }
 });
 
@@ -186,6 +192,9 @@ function renderTokens(tokens) {
         const channelInput = clone.querySelector('.channel-input');
         channelInput.value = token.channel_id || '';
         
+        const proxyInput = clone.querySelector('.proxy-input');
+        proxyInput.value = token.proxy || '';
+        
         const isActiveCheckbox = clone.querySelector('.is-active-checkbox');
         const joinVoiceCheckbox = clone.querySelector('.join-voice-checkbox');
         const muteCheckbox = clone.querySelector('.mute-checkbox');
@@ -317,7 +326,8 @@ function renderTokens(tokens) {
                 is_active: activeChecked,
                 activities_json: currentActivities,
                 rotation_interval: parseInt(rotationInput.value) || 30,
-                rotate_status: rotateStatusCheckbox.checked
+                rotate_status: rotateStatusCheckbox.checked,
+                proxy: proxyInput.value.trim() || null
             }).then(() => {
                 btn.textContent = 'Sauvegardé!';
                 btn.style.backgroundColor = '#10b981'; // success green

@@ -6,3 +6,7 @@ cryptography
 python-dotenv
 httpx
 itsdangerous
+
+aiosqlite
+
+aiohttp

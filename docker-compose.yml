@@ -1,0 +1,14 @@
+version: '3.8'
+
+services:
+  selfbot:
+    build: .
+    container_name: selfbot-manager
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./data:/app/data
+      - ./.env:/app/.env
+    environment:
+      - DB_PATH=data/data.db
