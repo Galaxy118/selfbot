@@ -34,3 +34,13 @@ async def update_global_active(data: dict, user: dict = Depends(get_current_user
             bot_manager.stop_bot(tid)
             
     return {"message": "Global status updated"}
+
+@router.get("/api/proxies")
+async def get_proxies(user: dict = Depends(get_current_user)):
+    import os
+    proxies = []
+    proxy_file = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), 'proxies.txt')
+    if os.path.exists(proxy_file):
+        with open(proxy_file, 'r') as f:
+            proxies = [line.strip() for line in f if line.strip()]
+    return proxies

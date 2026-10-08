@@ -4,6 +4,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Only run logic if we are on the dashboard
     if (document.getElementById('username-display')) {
         await fetchUser();
+        await fetchProxies();
         await fetchTokens();
 
         const addForm = document.getElementById('add-token-form');
@@ -68,6 +69,26 @@ async function fetchUser() {
         }
     } catch (e) {
         console.error("Failed to fetch user", e);
+    }
+}
+
+async function fetchProxies() {
+    try {
+        const res = await fetch('/api/proxies');
+        if (res.ok) {
+            const proxies = await res.json();
+            const datalist = document.getElementById('proxy-list');
+            if (datalist) {
+                datalist.innerHTML = '';
+                proxies.forEach(proxy => {
+                    const option = document.createElement('option');
+                    option.value = proxy;
+                    datalist.appendChild(option);
+                });
+            }
+        }
+    } catch (e) {
+        console.error('Failed to fetch proxies:', e);
     }
 }
 
