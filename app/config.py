@@ -13,9 +13,9 @@ load_dotenv(ENV_PATH)
 DB_PATH = os.environ.get("DB_PATH", "data.db")
 CLIENT_ID = os.environ.get("CLIENT_ID", "")
 CLIENT_SECRET = os.environ.get("CLIENT_SECRET", "")
-REDIRECT_URI = os.environ.get("REDIRECT_URI", "http://localhost:8000/auth/callback")
+REDIRECT_URI = os.environ.get("REDIRECT_URI", "http://localhost:8001/auth/callback")
 SESSION_SECRET = os.environ.get("SESSION_SECRET", secrets.token_hex(32))
-ADMIN_IDS = [uid.strip() for uid in os.environ.get("ADMIN_IDS", "").split(",") if uid.strip()]
+OWNER_IDS = [uid.strip() for uid in os.environ.get("OWNER_IDS", "").split(",") if uid.strip()]
 
 DISCORD_API_URL = "https://discord.com/api/v10"
 

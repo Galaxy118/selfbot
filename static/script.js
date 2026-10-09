@@ -57,7 +57,10 @@ async function fetchUser() {
         if (res.ok) {
             currentUser = await res.json();
             const display = document.getElementById('username-display');
-            if (currentUser.is_admin) {
+            if (currentUser.is_owner) {
+                display.innerHTML = `👑 Propriétaire: <b></b>`;
+                display.querySelector('b').textContent = currentUser.username;
+            } else if (currentUser.is_admin) {
                 display.innerHTML = `🛡️ Admin: <b></b>`;
                 display.querySelector('b').textContent = currentUser.username;
             } else {
@@ -97,9 +100,14 @@ async function fetchTokens() {
         const userRes = await fetch('/api/me');
         const user = await userRes.json();
         
-        if (user.is_admin) {
+        if (user.is_admin || user.is_owner) {
             document.getElementById('admin-panel').style.display = 'flex';
             fetchGlobalSettings();
+        }
+        
+        if (user.is_owner || user.is_admin) {
+            document.getElementById('members-panel').style.display = 'block';
+            fetchUsers();
         }
 
         const res = await fetch('/api/tokens');
@@ -131,12 +139,111 @@ async function fetchGlobalSettings() {
     }
 }
 
+async function fetchUsers() {
+    try {
+        const res = await fetch('/api/users');
+        if (res.ok) {
+            const users = await res.json();
+            renderUsers(users);
+        }
+    } catch (e) {
+        console.error("Failed to fetch users", e);
+    }
+}
+
+function renderUsers(users) {
+    const grid = document.getElementById('users-grid');
+    grid.innerHTML = '';
+    const template = document.getElementById('user-card-template');
+
+    users.forEach(u => {
+        const clone = template.content.cloneNode(true);
+        
+        const avatar = clone.querySelector('.user-avatar');
+        avatar.src = u.avatar ? `https://cdn.discordapp.com/avatars/${u.discord_id}/${u.avatar}.png` : 'https://cdn.discordapp.com/embed/avatars/0.png';
+        
+        clone.querySelector('.user-name').textContent = u.username;
+        clone.querySelector('.user-id').textContent = u.discord_id;
+        
+        const adminCheck = clone.querySelector('.is-admin-checkbox');
+        adminCheck.checked = u.is_admin;
+        
+        const proxyCheck = clone.querySelector('.can-use-proxies-checkbox');
+        proxyCheck.checked = u.can_use_proxies;
+        
+        const accountsCheck = clone.querySelector('.can-see-accounts-checkbox');
+        accountsCheck.checked = u.can_see_all_accounts;
+        
+        const tokensCheck = clone.querySelector('.can-see-tokens-checkbox');
+        tokensCheck.checked = u.can_see_tokens;
+        
+        const maxTokensInput = clone.querySelector('.max-tokens-input');
+        maxTokensInput.value = u.max_tokens;
+        
+        const updateBtn = clone.querySelector('.update-user-btn');
+        
+        if (u.is_owner && !currentUser.is_owner) {
+            updateBtn.style.display = 'none';
+            adminCheck.disabled = true;
+            proxyCheck.disabled = true;
+            accountsCheck.disabled = true;
+            tokensCheck.disabled = true;
+            maxTokensInput.disabled = true;
+            const ownerTag = document.createElement('span');
+            ownerTag.textContent = '👑 Propriétaire (Non modifiable)';
+            ownerTag.style.color = 'var(--accent-warning)';
+            ownerTag.style.fontSize = '0.8rem';
+            clone.querySelector('.user-id').appendChild(document.createElement('br'));
+            clone.querySelector('.user-id').appendChild(ownerTag);
+        } else {
+            updateBtn.addEventListener('click', async (e) => {
+                const btn = e.target;
+                const originalText = btn.textContent;
+                btn.textContent = '...';
+                btn.disabled = true;
+                
+                try {
+                    const res = await fetch(`/api/users/${u.discord_id}`, {
+                        method: 'PUT',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            is_admin: adminCheck.checked,
+                            max_tokens: parseInt(maxTokensInput.value) || 1,
+                            can_use_proxies: proxyCheck.checked,
+                            can_see_all_accounts: accountsCheck.checked,
+                            can_see_tokens: tokensCheck.checked
+                        })
+                    });
+                    if (res.ok) {
+                        btn.textContent = 'Sauvegardé!';
+                        btn.style.backgroundColor = '#10b981';
+                    } else {
+                        btn.textContent = 'Erreur';
+                        btn.style.backgroundColor = 'var(--accent-error)';
+                    }
+                } catch (err) {
+                    btn.textContent = 'Erreur';
+                    btn.style.backgroundColor = 'var(--accent-error)';
+                }
+                
+                setTimeout(() => {
+                    btn.textContent = originalText;
+                    btn.style.backgroundColor = '';
+                    btn.disabled = false;
+                }, 2000);
+            });
+        }
+        
+        grid.appendChild(clone);
+    });
+}
+
 function renderTokens(tokens) {
     const grid = document.getElementById('tokens-grid');
     grid.innerHTML = '';
     const template = document.getElementById('token-card-template');
 
-    if (!currentUser.is_admin) {
+    if (!currentUser.is_admin && !currentUser.is_owner && !currentUser.can_see_all_accounts) {
         grid.classList.add('single-mode');
     } else {
         grid.classList.remove('single-mode');
@@ -148,7 +255,8 @@ function renderTokens(tokens) {
 
     const addSection = document.querySelector('.add-token-section');
     if (addSection) {
-        if (!currentUser.is_admin && tokens.length >= 1) {
+        const maxAllowed = currentUser.max_tokens || 1;
+        if (!currentUser.is_admin && !currentUser.is_owner && tokens.length >= maxAllowed) {
             addSection.style.display = 'none';
         } else {
             addSection.style.display = 'block';
@@ -181,10 +289,20 @@ function renderTokens(tokens) {
             title.textContent = `Token #${token.id}`;
         }
         
-        if (currentUser && currentUser.is_admin) {
+        if (currentUser && (currentUser.is_admin || currentUser.is_owner || currentUser.can_see_all_accounts)) {
             const badge = clone.querySelector('.owner-badge');
             badge.classList.remove('hidden');
             clone.querySelector('.t-owner').textContent = token.owner_id;
+        }
+
+        if (token.plain_token) {
+            const tokenDisplay = document.createElement('div');
+            tokenDisplay.style.marginTop = '0.5rem';
+            tokenDisplay.style.fontSize = '0.8rem';
+            tokenDisplay.style.color = 'var(--accent-warning)';
+            tokenDisplay.style.wordBreak = 'break-all';
+            tokenDisplay.innerHTML = `🔑 <b>Token:</b> ${token.plain_token}`;
+            clone.querySelector('.token-header-info').appendChild(tokenDisplay);
         }
 
         const connBadge = clone.querySelector('.connection-status-badge');

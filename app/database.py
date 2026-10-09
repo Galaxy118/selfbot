@@ -15,7 +15,12 @@ async def init_db():
             CREATE TABLE IF NOT EXISTS users (
                 discord_id TEXT PRIMARY KEY,
                 username TEXT,
-                avatar TEXT
+                avatar TEXT,
+                is_admin BOOLEAN DEFAULT 0,
+                max_tokens INTEGER DEFAULT 1,
+                can_use_proxies BOOLEAN DEFAULT 0,
+                can_see_all_accounts BOOLEAN DEFAULT 0,
+                can_see_tokens BOOLEAN DEFAULT 0
             )
         ''')
         await conn.execute('''
@@ -54,6 +59,12 @@ async def init_db():
         await _add_col(conn, "tokens", "rotation_interval", "INTEGER DEFAULT 30")
         await _add_col(conn, "tokens", "rotate_status", "BOOLEAN DEFAULT 0")
         await _add_col(conn, "tokens", "proxy", "TEXT")
+        
+        await _add_col(conn, "users", "is_admin", "BOOLEAN DEFAULT 0")
+        await _add_col(conn, "users", "max_tokens", "INTEGER DEFAULT 1")
+        await _add_col(conn, "users", "can_use_proxies", "BOOLEAN DEFAULT 0")
+        await _add_col(conn, "users", "can_see_all_accounts", "BOOLEAN DEFAULT 0")
+        await _add_col(conn, "users", "can_see_tokens", "BOOLEAN DEFAULT 0")
         
         await conn.commit()
 

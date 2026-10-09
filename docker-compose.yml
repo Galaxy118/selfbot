@@ -6,7 +6,7 @@ services:
     container_name: selfbot-manager
     restart: unless-stopped
     ports:
-      - "8000:8000"
+      - "8001:8001"
     volumes:
       - ./data:/app/data
       - ./.env:/app/.env

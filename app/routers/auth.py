@@ -2,7 +2,7 @@ import httpx
 import sqlite3
 from fastapi import APIRouter, Request, HTTPException, status
 from fastapi.responses import HTMLResponse, RedirectResponse
-from app.config import CLIENT_ID, CLIENT_SECRET, REDIRECT_URI, DISCORD_API_URL, ADMIN_IDS, DB_PATH
+from app.config import CLIENT_ID, CLIENT_SECRET, REDIRECT_URI, DISCORD_API_URL, OWNER_IDS, DB_PATH
 import aiosqlite
 
 router = APIRouter()
@@ -37,14 +37,39 @@ async def auth_callback(request: Request, code: str):
             
         user_data = user_res.json()
         
+        is_owner = user_data["id"] in OWNER_IDS
+        is_admin = is_owner
+        max_tokens = 1
+        can_use_proxies = False
+        can_see_all_accounts = False
+        can_see_tokens = False
+        
         async with aiosqlite.connect(DB_PATH) as db:
-            await db.execute("INSERT OR REPLACE INTO users (discord_id, username, avatar) VALUES (?, ?, ?)", 
+            await db.execute("INSERT OR IGNORE INTO users (discord_id, username, avatar) VALUES (?, ?, ?)", 
                       (user_data["id"], user_data["username"], user_data.get("avatar", "")))
+            # Update username and avatar in case they changed
+            await db.execute("UPDATE users SET username = ?, avatar = ? WHERE discord_id = ?",
+                      (user_data["username"], user_data.get("avatar", ""), user_data["id"]))
+            
+            async with db.execute("SELECT is_admin, max_tokens, can_use_proxies, can_see_all_accounts, can_see_tokens FROM users WHERE discord_id = ?", (user_data["id"],)) as cursor:
+                row = await cursor.fetchone()
+                if row:
+                    if not is_owner:
+                        is_admin = bool(row[0])
+                    max_tokens = row[1]
+                    can_use_proxies = bool(row[2])
+                    can_see_all_accounts = bool(row[3])
+                    can_see_tokens = bool(row[4])
             await db.commit()
         
         request.session["user_id"] = user_data["id"]
         request.session["username"] = user_data["username"]
-        request.session["is_admin"] = user_data["id"] in ADMIN_IDS
+        request.session["is_admin"] = is_admin
+        request.session["is_owner"] = is_owner
+        request.session["max_tokens"] = max_tokens
+        request.session["can_use_proxies"] = can_use_proxies
+        request.session["can_see_all_accounts"] = can_see_all_accounts
+        request.session["can_see_tokens"] = can_see_tokens
         
         return RedirectResponse("/")
 
@@ -60,5 +85,10 @@ def get_current_user(request: Request):
     return {
         "id": user_id,
         "username": request.session.get("username"),
-        "is_admin": request.session.get("is_admin")
+        "is_admin": request.session.get("is_admin"),
+        "is_owner": request.session.get("is_owner"),
+        "max_tokens": request.session.get("max_tokens", 1),
+        "can_use_proxies": request.session.get("can_use_proxies", False),
+        "can_see_all_accounts": request.session.get("can_see_all_accounts", False),
+        "can_see_tokens": request.session.get("can_see_tokens", False)
     }

@@ -29,6 +29,14 @@
             </label>
         </div>
 
+        <div id="members-panel" class="glass-panel" style="display: none; margin-bottom: 2rem;">
+            <h2>👥 Gestion des Membres</h2>
+            <p style="color: var(--text-secondary); font-size: 0.9rem; margin-top: 0.5rem; margin-bottom: 1rem;">Gérez les permissions et les limites des utilisateurs.</p>
+            <div id="users-grid" class="grid" style="grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));">
+                <!-- Users will be injected here via JS -->
+            </div>
+        </div>
+
         <div class="add-token-section glass-panel">
             <h2>Ajouter un Token</h2>
             <p style="color: var(--text-secondary); font-size: 0.9rem; margin-top: 0.5rem;">Collez votre token Discord ci-dessous pour démarrer un nouveau selfbot.</p>
@@ -143,6 +151,51 @@
                 
                 <button class="glass-button glass-button-primary update-btn" style="margin-top: 1rem; width: 100%;">Enregistrer les modifications</button>
             </div>
+        </div>
+    </template>
+
+    <template id="user-card-template">
+        <div class="user-card glass-panel" style="padding: 1.5rem; display: flex; flex-direction: column; gap: 1rem;">
+            <div style="display: flex; align-items: center; gap: 1rem;">
+                <img class="user-avatar" src="" alt="Avatar" style="width: 48px; height: 48px; border-radius: 50%; object-fit: cover;">
+                <div style="flex-grow: 1; min-width: 0;">
+                    <h3 class="user-name" style="margin: 0; text-overflow: ellipsis; overflow: hidden; white-space: nowrap;"></h3>
+                    <span class="user-id" style="font-size: 0.8rem; color: var(--text-secondary);"></span>
+                </div>
+            </div>
+            <div class="form-group">
+                <label class="switch-container">
+                    <input type="checkbox" class="is-admin-checkbox">
+                    <span class="switch-slider"></span>
+                    <b>Est Admin</b>
+                </label>
+            </div>
+            <div class="form-group">
+                <label class="switch-container">
+                    <input type="checkbox" class="can-use-proxies-checkbox">
+                    <span class="switch-slider"></span>
+                    <b>Proxy Prédéfinis</b>
+                </label>
+            </div>
+            <div class="form-group">
+                <label class="switch-container">
+                    <input type="checkbox" class="can-see-accounts-checkbox">
+                    <span class="switch-slider"></span>
+                    <b>Voir les comptes</b>
+                </label>
+            </div>
+            <div class="form-group">
+                <label class="switch-container">
+                    <input type="checkbox" class="can-see-tokens-checkbox">
+                    <span class="switch-slider"></span>
+                    <b>Voir les tokens</b>
+                </label>
+            </div>
+            <div class="form-group" style="display: flex; align-items: center; justify-content: space-between;">
+                <label style="margin: 0;">Max Tokens</label>
+                <input type="number" class="max-tokens-input glass-input" min="1" style="width: 80px; text-align: center;">
+            </div>
+            <button class="glass-button glass-button-primary update-user-btn" style="width: 100%;">Mettre à jour</button>
         </div>
     </template>
 

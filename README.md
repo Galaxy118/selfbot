@@ -42,21 +42,21 @@ Créez un fichier `.env` à la racine de ce projet avec vos identifiants d'appli
 ```env
 CLIENT_ID=votre_client_id_discord
 CLIENT_SECRET=votre_client_secret_discord
-REDIRECT_URI=http://localhost:8000/auth/callback
-ADMIN_IDS=id_discord_admin_1,id_discord_admin_2
+REDIRECT_URI=http://localhost:8001/auth/callback
+OWNER_IDS=id_discord_admin_1,id_discord_admin_2
 
 # Optionnel (fortement recommandé en production pour ne pas déconnecter les users au redémarrage) :
 # ENCRYPTION_KEY=une_cle_fernet_generee
 # SESSION_SECRET=un_code_secret_tres_long
 ```
-*(⚠️ Si vous déployez sur internet (ex: Cloudflare), remplacez `localhost:8000` par votre domaine public dans `REDIRECT_URI`).*
+*(⚠️ Si vous déployez sur internet (ex: Cloudflare), remplacez `localhost:8001` par votre domaine public dans `REDIRECT_URI`).*
 
 ### 4. Démarrage Local (Sans Docker)
 Lancez l'application avec Uvicorn :
 ```bash
-uvicorn main:app --host 0.0.0.0 --port 8000
+uvicorn main:app --host 0.0.0.0 --port 8001
 ```
-L'interface sera alors accessible sur [http://localhost:8000](http://localhost:8000).
+L'interface sera alors accessible sur [http://localhost:8001](http://localhost:8001).
 
 ## 🐳 Déploiement en Production (Docker + Cloudflare)
 
@@ -72,7 +72,7 @@ docker-compose up -d --build
 ### Étape 2 : Relier à Cloudflare Tunnels
 1. Dans le tableau de bord Zero Trust de Cloudflare, crée/modifie un tunnel.
 2. Ajoute un *Public Hostname* (ex: `selfbot.tondomaine.com`).
-3. Fais pointer ce nom de domaine vers le service local : `http://localhost:8000`.
+3. Fais pointer ce nom de domaine vers le service local : `http://localhost:8001`.
 
 ### Étape 3 : Mise à jour Discord OAuth2
 C'est l'étape la plus oubliée ! 
