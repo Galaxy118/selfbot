@@ -56,7 +56,7 @@ async def add_token(data: TokenCreate, user: dict = Depends(get_current_user)):
         except Exception as e:
             raise HTTPException(status_code=400, detail="Erreur lors de l'enregistrement du token")
         
-    bot_manager.start_bot(token_id, encrypted_token, 'online', None, None, True, False, False, True, [], 30, False)
+    bot_manager.start_bot(token_id, encrypted_token, 'online', None, None, True, False, False, True, [], 30, False, None)
     return {"message": "Token added successfully"}
 
 @router.get("/api/tokens")
