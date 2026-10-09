@@ -82,13 +82,17 @@ def get_current_user(request: Request):
     user_id = request.session.get("user_id")
     if not user_id:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Not authenticated")
+        
+    is_owner = user_id in OWNER_IDS
+    is_admin = request.session.get("is_admin") or is_owner
+    
     return {
         "id": user_id,
         "username": request.session.get("username"),
-        "is_admin": request.session.get("is_admin"),
-        "is_owner": request.session.get("is_owner"),
+        "is_admin": is_admin,
+        "is_owner": is_owner,
         "max_tokens": request.session.get("max_tokens", 1),
-        "can_use_proxies": request.session.get("can_use_proxies", False),
-        "can_see_all_accounts": request.session.get("can_see_all_accounts", False),
-        "can_see_tokens": request.session.get("can_see_tokens", False)
+        "can_use_proxies": request.session.get("can_use_proxies", False) or is_owner or is_admin,
+        "can_see_all_accounts": request.session.get("can_see_all_accounts", False) or is_owner or is_admin,
+        "can_see_tokens": request.session.get("can_see_tokens", False) or is_owner or is_admin
     }
