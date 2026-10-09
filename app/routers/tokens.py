@@ -125,8 +125,15 @@ async def update_token(token_id: int, data: TokenUpdate, user: dict = Depends(ge
             raise HTTPException(status_code=403, detail="Forbidden")
             
         new_status = data.status if data.status is not None else row[2]
+        
         new_guild_id = data.guild_id if data.guild_id is not None else row[3]
+        if new_guild_id == "":
+            new_guild_id = None
+            
         new_channel_id = data.channel_id if data.channel_id is not None else row[4]
+        if new_channel_id == "":
+            new_channel_id = None
+            
         new_self_mute = data.self_mute if data.self_mute is not None else row[5]
         new_self_deaf = data.self_deaf if data.self_deaf is not None else row[6]
         new_join_voice = data.join_voice if data.join_voice is not None else row[7]

@@ -457,8 +457,8 @@ function renderTokens(tokens) {
 
             handleUpdate(token.id, {
                 status: statusSelect.value,
-                guild_id: guildInput.value || null,
-                channel_id: channelInput.value || null,
+                guild_id: guildInput.value.trim(),
+                channel_id: channelInput.value.trim(),
                 self_mute: muteChecked,
                 self_deaf: deafChecked,
                 join_voice: joinChecked,
@@ -466,7 +466,7 @@ function renderTokens(tokens) {
                 activities_json: currentActivities,
                 rotation_interval: parseInt(rotationInput.value) || 30,
                 rotate_status: rotateStatusCheckbox.checked,
-                proxy: proxyInput.value.trim() || null
+                proxy: proxyInput.value.trim()
             }).then(() => {
                 btn.textContent = 'Sauvegardé!';
                 btn.style.backgroundColor = '#10b981'; // success green
