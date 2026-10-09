@@ -12,7 +12,7 @@ async def login():
     url = f"https://discord.com/oauth2/authorize?client_id={CLIENT_ID}&response_type=code&redirect_uri={REDIRECT_URI}&scope=identify"
     return RedirectResponse(url)
 
-@router.get("/auth/callback")
+@router.get("/discord/callback")
 async def auth_callback(request: Request, code: str):
     async with httpx.AsyncClient() as client:
         data = {
