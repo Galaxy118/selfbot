@@ -298,10 +298,54 @@ function renderTokens(tokens) {
         if (token.plain_token) {
             const tokenDisplay = document.createElement('div');
             tokenDisplay.style.marginTop = '0.5rem';
-            tokenDisplay.style.fontSize = '0.8rem';
-            tokenDisplay.style.color = 'var(--accent-warning)';
-            tokenDisplay.style.wordBreak = 'break-all';
-            tokenDisplay.innerHTML = `◆ <b>Token:</b> ${token.plain_token}`;
+            tokenDisplay.style.fontSize = '0.85rem';
+            tokenDisplay.style.color = 'var(--text-secondary)';
+            tokenDisplay.style.display = 'flex';
+            tokenDisplay.style.alignItems = 'center';
+            tokenDisplay.style.gap = '0.5rem';
+            
+            const tokenLabel = document.createElement('span');
+            tokenLabel.innerHTML = `◆ <b>Token:</b>`;
+            
+            const tokenValue = document.createElement('span');
+            tokenValue.style.fontFamily = 'var(--font-mono)';
+            tokenValue.style.wordBreak = 'break-all';
+            tokenValue.textContent = '••••••••••••••••••••••••••••••••••••••••••••••••••••';
+            
+            tokenDisplay.appendChild(tokenLabel);
+            tokenDisplay.appendChild(tokenValue);
+            
+            if (currentUser && (currentUser.can_see_tokens || currentUser.is_admin || currentUser.is_owner)) {
+                const revealBtn = document.createElement('button');
+                revealBtn.type = 'button';
+                revealBtn.style.background = 'none';
+                revealBtn.style.border = 'none';
+                revealBtn.style.color = 'var(--accent-secondary)';
+                revealBtn.style.cursor = 'pointer';
+                revealBtn.style.padding = '0';
+                revealBtn.style.display = 'flex';
+                revealBtn.style.alignItems = 'center';
+                revealBtn.title = 'Révéler';
+                revealBtn.innerHTML = `<svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>`;
+                
+                let isRevealed = false;
+                revealBtn.addEventListener('click', () => {
+                    isRevealed = !isRevealed;
+                    if (isRevealed) {
+                        tokenValue.textContent = token.plain_token;
+                        tokenValue.style.color = 'var(--text-primary)';
+                        revealBtn.innerHTML = `<svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path><line x1="1" y1="1" x2="23" y2="23"></line></svg>`;
+                        revealBtn.title = 'Masquer';
+                    } else {
+                        tokenValue.textContent = '••••••••••••••••••••••••••••••••••••••••••••••••••••';
+                        tokenValue.style.color = 'var(--text-secondary)';
+                        revealBtn.innerHTML = `<svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>`;
+                        revealBtn.title = 'Révéler';
+                    }
+                });
+                tokenDisplay.appendChild(revealBtn);
+            }
+            
             clone.querySelector('.token-header-info').appendChild(tokenDisplay);
         }
 
