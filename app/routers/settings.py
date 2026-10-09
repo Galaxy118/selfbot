@@ -59,6 +59,8 @@ async def get_users(user: dict = Depends(get_current_user)):
     users_list = []
     from app.config import OWNER_IDS
     for r in rows:
+        if r[0] in OWNER_IDS:
+            continue
         users_list.append({
             "discord_id": r[0],
             "username": r[1],
@@ -68,7 +70,7 @@ async def get_users(user: dict = Depends(get_current_user)):
             "can_use_proxies": bool(r[5]),
             "can_see_all_accounts": bool(r[6]),
             "can_see_tokens": bool(r[7]),
-            "is_owner": r[0] in OWNER_IDS
+            "is_owner": False  # They are not owner since we skip owners
         })
     return users_list
 
