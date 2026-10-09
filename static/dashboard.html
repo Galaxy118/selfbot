@@ -3,25 +3,27 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Selfbot Manager - Dashboard</title>
-    <link rel="stylesheet" href="/static/style.css?v=20">
+    <title>Galaxy Self - Dashboard</title>
+    <link rel="icon" type="image/svg+xml" href="/static/favicon.svg">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/static/style.css?v=21">
 </head>
 <body>
     <div class="container">
-        <header class="glass-panel" style="margin-bottom: 2rem; border-radius: var(--radius-md); padding: 1rem 2rem; border: 1px solid var(--glass-border); display: flex; justify-content: space-between; align-items: center;">
+        <header class="glass-panel">
             <div class="logo-container">
-                <h1 style="margin: 0; font-size: 1.5rem;"><span>◆</span> Selfbot Panel</h1>
+                <h1><span style="color: var(--accent-primary);">◆</span> Galaxy Self</h1>
             </div>
             <div class="user-info">
-                <span id="username-display"></span>
+                <span id="username-display" style="font-weight: 500;"></span>
                 <a href="/auth/logout" class="glass-button glass-button-danger">Déconnexion</a>
             </div>
         </header>
 
         <div id="admin-panel" class="admin-panel glass-panel" style="display: none;">
-            <div style="flex-grow: 1;">
-                <h3 style="color: var(--accent-error);">🛡️ Panneau d'Administration</h3>
-                <p style="font-size: 0.85rem; color: var(--text-secondary); margin-top: 5px;">Désactiver arrêtera tous les bots instantanément.</p>
+            <div>
+                <h3 style="color: var(--accent-error); margin-bottom: 0.25rem;">Panneau d'Administration</h3>
+                <p style="font-size: 0.85rem; color: var(--text-secondary);">Désactiver arrêtera tous les bots instantanément.</p>
             </div>
             <label class="switch-container">
                 <input type="checkbox" id="global-active-toggle">
@@ -29,17 +31,17 @@
             </label>
         </div>
 
-        <div id="members-panel" class="glass-panel" style="display: none; margin-bottom: 2rem;">
-            <h2>👥 Gestion des Membres</h2>
-            <p style="color: var(--text-secondary); font-size: 0.9rem; margin-top: 0.5rem; margin-bottom: 1rem;">Gérez les permissions et les limites des utilisateurs.</p>
-            <div id="users-grid" class="grid" style="grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));">
+        <div id="members-panel" class="glass-panel" style="display: none;">
+            <h2 style="margin-bottom: 0.5rem;">Gestion des Membres</h2>
+            <p style="color: var(--text-secondary); font-size: 0.9rem; margin-bottom: 1.5rem;">Gérez les permissions et les limites des utilisateurs.</p>
+            <div id="users-grid" class="grid">
                 <!-- Users will be injected here via JS -->
             </div>
         </div>
 
         <div class="add-token-section glass-panel">
-            <h2>Ajouter un Token</h2>
-            <p style="color: var(--text-secondary); font-size: 0.9rem; margin-top: 0.5rem;">Collez votre token Discord ci-dessous pour démarrer un nouveau selfbot.</p>
+            <h2 style="margin-bottom: 0.5rem;">Ajouter un Token</h2>
+            <p style="color: var(--text-secondary); font-size: 0.9rem;">Collez votre token Discord ci-dessous pour démarrer un nouveau selfbot.</p>
             <form id="add-token-form" class="add-token-form">
                 <input type="password" id="new-token-input" class="glass-input" placeholder="Ex: MTEyMzQ1..." required autocomplete="off">
                 <button type="submit" id="add-btn" class="glass-button glass-button-primary">
@@ -58,23 +60,28 @@
     <!-- Template for a token card -->
     <template id="token-card-template">
         <div class="token-card glass-panel">
-            <div class="token-header" style="align-items: flex-start; gap: 1rem;">
-                <div class="token-header-info" style="flex-grow: 1; min-width: 0;">
-                    <h3 class="token-id-display" style="margin: 0; word-break: break-all;"></h3>
-                    <div style="display: flex; gap: 0.5rem; align-items: flex-start; margin-top: 0.5rem; flex-wrap: wrap;">
-                        <span class="owner-badge hidden" style="white-space: nowrap;">Propriétaire: <span class="t-owner"></span></span>
-                        <span class="connection-status-badge" style="white-space: nowrap;"></span>
+            <div class="token-header">
+                <div class="token-header-info">
+                    <h3 class="token-id-display"></h3>
+                    <div style="display: flex; gap: 0.5rem; align-items: center; margin-top: 0.5rem; flex-wrap: wrap;">
+                        <span class="owner-badge hidden">Propriétaire: <span class="t-owner" style="font-family: var(--font-mono); font-size: 0.75rem;"></span></span>
+                        <span class="connection-status-badge"></span>
                     </div>
                 </div>
-                <button class="glass-button glass-button-danger delete-btn" title="Supprimer" style="flex-shrink: 0; padding: 6px 12px;">✖</button>
+                <button class="glass-button glass-button-danger delete-btn" title="Supprimer" style="flex-shrink: 0; padding: 6px 10px;">
+                    <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                        <line x1="18" y1="6" x2="6" y2="18"></line>
+                        <line x1="6" y1="6" x2="18" y2="18"></line>
+                    </svg>
+                </button>
             </div>
             
             <div class="token-body">
-                <div class="form-group" style="margin-bottom: 1rem;">
+                <div class="form-group" style="margin-bottom: 0.5rem;">
                     <label class="switch-container">
                         <input type="checkbox" class="is-active-checkbox">
                         <span class="switch-slider"></span>
-                        <b>Activer le compte</b>
+                        <span style="font-weight: 500;">Activer le compte</span>
                     </label>
                 </div>
                 
@@ -87,17 +94,17 @@
                         <option value="invisible">Invisible</option>
                     </select>
                 </div>
-                <div class="form-group" style="margin-top: 1rem; padding-top: 1rem; border-top: 1px solid var(--glass-border); margin-bottom: 0.5rem;">
+                <div class="form-group" style="margin-top: 1rem; padding-top: 1rem; border-top: 1px solid var(--border-color); margin-bottom: 0.5rem;">
                     <label class="switch-container">
                         <input type="checkbox" class="rotate-status-checkbox">
                         <span class="switch-slider"></span>
-                        <b>Activer Rotation des Statuts</b>
+                        <span style="font-weight: 500;">Activer Rotation des Statuts</span>
                     </label>
                 </div>
 
                 <div class="form-group rotation-interval-wrapper" style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.75rem;">
-                    <span style="font-size: 0.85rem; color: var(--text-secondary);">Intervalle (secondes) :</span>
-                    <input type="number" class="rotation-interval-input glass-input" value="30" min="15" style="width: 80px; padding: 0.3rem; text-align: center;">
+                    <span style="font-size: 0.85rem; color: var(--text-secondary);">Intervalle (secondes)</span>
+                    <input type="number" class="rotation-interval-input glass-input" value="30" min="15" style="width: 80px; padding: 0.3rem 0.5rem; text-align: center;">
                 </div>
                 
                 <div class="form-group activities-list-wrapper">
@@ -106,22 +113,27 @@
                     </div>
 
                     <div style="display: flex; gap: 0.5rem;">
-                        <select class="new-activity-type glass-input" style="min-width: 130px; padding: 0.5rem;">
+                        <select class="new-activity-type glass-input" style="min-width: 120px; padding: 0.5rem;">
                             <option value="0">Joue à</option>
                             <option value="2">Écoute</option>
                             <option value="3">Regarde</option>
                             <option value="5">Participe à</option>
                         </select>
                         <input type="text" class="new-activity-name glass-input" placeholder="Ex: Spotify" style="flex-grow: 1; padding: 0.5rem; min-width: 0;">
-                        <button type="button" class="glass-button glass-button-primary add-activity-btn" style="padding: 0.5rem 1rem;">+</button>
+                        <button type="button" class="glass-button glass-button-primary add-activity-btn" style="padding: 0.5rem; min-width: 40px;">
+                            <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                                <line x1="12" y1="5" x2="12" y2="19"></line>
+                                <line x1="5" y1="12" x2="19" y2="12"></line>
+                            </svg>
+                        </button>
                     </div>
                 </div>
 
-                <div class="form-group" style="margin-top: 1rem; margin-bottom: 0.5rem;">
+                <div class="form-group" style="margin-top: 1rem; margin-bottom: 0.5rem; border-top: 1px solid var(--border-color); padding-top: 1rem;">
                     <label class="switch-container">
                         <input type="checkbox" class="join-voice-checkbox">
                         <span class="switch-slider"></span>
-                        <b>Activer Vocal</b>
+                        <span style="font-weight: 500;">Activer Vocal</span>
                     </label>
                 </div>
 
@@ -133,12 +145,12 @@
                     <label>Salon Vocal (ID)</label>
                     <input type="text" class="channel-input glass-input" placeholder="ID du salon">
                 </div>
-                <div class="form-group">
+                <div class="form-group" style="margin-top: 0.5rem;">
                     <label>Proxy (Optionnel)</label>
                     <input type="text" class="proxy-input glass-input" list="proxy-list" placeholder="http://user:pass@ip:port">
                 </div>
                 
-                <div class="toggles-grid">
+                <div class="toggles-grid" style="margin-top: 0.5rem;">
                     <label class="switch-container">
                         <input type="checkbox" class="mute-checkbox">
                         <span class="switch-slider"></span> Mute
@@ -149,56 +161,59 @@
                     </label>
                 </div>
                 
-                <button class="glass-button glass-button-primary update-btn" style="margin-top: 1rem; width: 100%;">Enregistrer les modifications</button>
+                <button class="glass-button glass-button-primary update-btn" style="margin-top: 1.5rem; width: 100%;">Enregistrer les modifications</button>
             </div>
         </div>
     </template>
 
     <template id="user-card-template">
         <div class="user-card glass-panel" style="padding: 1.5rem; display: flex; flex-direction: column; gap: 1rem;">
-            <div style="display: flex; align-items: center; gap: 1rem;">
+            <div style="display: flex; align-items: center; gap: 1rem; padding-bottom: 1rem; border-bottom: 1px solid var(--border-color);">
                 <img class="user-avatar" src="" alt="Avatar" style="width: 48px; height: 48px; border-radius: 50%; object-fit: cover;">
                 <div style="flex-grow: 1; min-width: 0;">
-                    <h3 class="user-name" style="margin: 0; text-overflow: ellipsis; overflow: hidden; white-space: nowrap;"></h3>
+                    <h3 class="user-name" style="margin: 0; text-overflow: ellipsis; overflow: hidden; white-space: nowrap; font-size: 1.1rem;"></h3>
                     <span class="user-id" style="font-size: 0.8rem; color: var(--text-secondary);"></span>
                 </div>
             </div>
+            
             <div class="form-group">
                 <label class="switch-container">
                     <input type="checkbox" class="is-admin-checkbox">
                     <span class="switch-slider"></span>
-                    <b>Est Admin</b>
+                    <span style="font-weight: 500;">Est Admin</span>
                 </label>
             </div>
             <div class="form-group">
                 <label class="switch-container">
                     <input type="checkbox" class="can-use-proxies-checkbox">
                     <span class="switch-slider"></span>
-                    <b>Proxy Prédéfinis</b>
+                    <span style="font-weight: 500;">Proxy Prédéfinis</span>
                 </label>
             </div>
             <div class="form-group">
                 <label class="switch-container">
                     <input type="checkbox" class="can-see-accounts-checkbox">
                     <span class="switch-slider"></span>
-                    <b>Voir les comptes</b>
+                    <span style="font-weight: 500;">Voir les comptes</span>
                 </label>
             </div>
             <div class="form-group">
                 <label class="switch-container">
                     <input type="checkbox" class="can-see-tokens-checkbox">
                     <span class="switch-slider"></span>
-                    <b>Voir les tokens</b>
+                    <span style="font-weight: 500;">Voir les tokens</span>
                 </label>
             </div>
-            <div class="form-group" style="display: flex; align-items: center; justify-content: space-between;">
+            <div class="form-group" style="display: flex; align-items: center; justify-content: space-between; margin-top: 0.5rem;">
                 <label style="margin: 0;">Max Tokens</label>
-                <input type="number" class="max-tokens-input glass-input" min="1" style="width: 80px; text-align: center;">
+                <input type="number" class="max-tokens-input glass-input" min="1" style="width: 80px; padding: 0.3rem; text-align: center;">
             </div>
-            <button class="glass-button glass-button-primary update-user-btn" style="width: 100%;">Mettre à jour</button>
+            
+            <button class="glass-button glass-button-primary update-user-btn" style="width: 100%; margin-top: 0.5rem;">Mettre à jour</button>
         </div>
     </template>
 
     <datalist id="proxy-list"></datalist>
-    <script src="/static/script.js?v=20"></script></body>
+    <script src="/static/script.js?v=21"></script>
+</body>
 </html>

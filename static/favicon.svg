@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+  <defs>
+    <linearGradient id="galaxyGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#A78BFA;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#8B5CF6;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+  <!-- Orbit path -->
+  <circle cx="50" cy="50" r="40" fill="none" stroke="#26334D" stroke-width="6" />
+  <path d="M 10 50 A 40 40 0 0 1 90 50" fill="none" stroke="url(#galaxyGrad)" stroke-width="6" />
+  
+  <!-- Central Diamond -->
+  <polygon points="50,20 80,50 50,80 20,50" fill="url(#galaxyGrad)"/>
+  
+  <!-- Inner Core -->
+  <polygon points="50,35 65,50 50,65 35,50" fill="#0B1020"/>
+</svg>

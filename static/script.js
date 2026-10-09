@@ -26,15 +26,15 @@ document.addEventListener('DOMContentLoaded', async () => {
                                 const connBadge = card.querySelector('.connection-status-badge');
                                 if (connBadge) {
                                     if (token.is_connected) {
-                                        connBadge.textContent = '🟢 Connecté';
-                                        connBadge.style.backgroundColor = 'rgba(50, 215, 75, 0.15)';
+                                        connBadge.textContent = '◆ Connecté';
+                                        connBadge.style.backgroundColor = 'rgba(16, 185, 129, 0.1)';
                                         connBadge.style.color = 'var(--accent-success)';
-                                        connBadge.style.border = '1px solid rgba(50, 215, 75, 0.3)';
+                                        connBadge.style.border = '1px solid rgba(16, 185, 129, 0.2)';
                                     } else {
-                                        connBadge.textContent = '🔴 Déconnecté';
-                                        connBadge.style.backgroundColor = 'rgba(255, 69, 58, 0.15)';
+                                        connBadge.textContent = '◇ Déconnecté';
+                                        connBadge.style.backgroundColor = 'rgba(239, 68, 68, 0.1)';
                                         connBadge.style.color = 'var(--accent-error)';
-                                        connBadge.style.border = '1px solid rgba(255, 69, 58, 0.3)';
+                                        connBadge.style.border = '1px solid rgba(239, 68, 68, 0.2)';
                                     }
                                 }
                             }
@@ -58,13 +58,13 @@ async function fetchUser() {
             currentUser = await res.json();
             const display = document.getElementById('username-display');
             if (currentUser.is_owner) {
-                display.innerHTML = `👑 Propriétaire: <b></b>`;
+                display.innerHTML = `◆ Propriétaire: <b></b>`;
                 display.querySelector('b').textContent = currentUser.username;
             } else if (currentUser.is_admin) {
-                display.innerHTML = `🛡️ Admin: <b></b>`;
+                display.innerHTML = `◇ Admin: <b></b>`;
                 display.querySelector('b').textContent = currentUser.username;
             } else {
-                display.innerHTML = `👤 <b></b>`;
+                display.innerHTML = `◇ <b></b>`;
                 display.querySelector('b').textContent = currentUser.username;
             }
         } else {
@@ -190,7 +190,7 @@ function renderUsers(users) {
             tokensCheck.disabled = true;
             maxTokensInput.disabled = true;
             const ownerTag = document.createElement('span');
-            ownerTag.textContent = '👑 Propriétaire (Non modifiable)';
+            ownerTag.textContent = '◆ Propriétaire (Non modifiable)';
             ownerTag.style.color = 'var(--accent-warning)';
             ownerTag.style.fontSize = '0.8rem';
             clone.querySelector('.user-id').appendChild(document.createElement('br'));
@@ -274,7 +274,7 @@ function renderTokens(tokens) {
         const title = clone.querySelector('.token-id-display');
         title.innerHTML = '';
         if (token.bot_username && token.bot_username !== "Unknown") {
-            title.appendChild(document.createTextNode('👤 '));
+            title.appendChild(document.createTextNode('◇ '));
             
             const spanUsername = document.createElement('span');
             spanUsername.textContent = token.bot_username;
@@ -301,7 +301,7 @@ function renderTokens(tokens) {
             tokenDisplay.style.fontSize = '0.8rem';
             tokenDisplay.style.color = 'var(--accent-warning)';
             tokenDisplay.style.wordBreak = 'break-all';
-            tokenDisplay.innerHTML = `🔑 <b>Token:</b> ${token.plain_token}`;
+            tokenDisplay.innerHTML = `◆ <b>Token:</b> ${token.plain_token}`;
             clone.querySelector('.token-header-info').appendChild(tokenDisplay);
         }
 
@@ -311,15 +311,15 @@ function renderTokens(tokens) {
         connBadge.style.padding = '2px 6px';
         connBadge.style.borderRadius = '4px';
         if (token.is_connected) {
-            connBadge.textContent = '🟢 Connecté';
-            connBadge.style.backgroundColor = 'rgba(50, 215, 75, 0.15)';
+            connBadge.textContent = '◆ Connecté';
+            connBadge.style.backgroundColor = 'rgba(16, 185, 129, 0.1)';
             connBadge.style.color = 'var(--accent-success)';
-            connBadge.style.border = '1px solid rgba(50, 215, 75, 0.3)';
+            connBadge.style.border = '1px solid rgba(16, 185, 129, 0.2)';
         } else {
-            connBadge.textContent = '🔴 Déconnecté';
-            connBadge.style.backgroundColor = 'rgba(255, 69, 58, 0.15)';
+            connBadge.textContent = '◇ Déconnecté';
+            connBadge.style.backgroundColor = 'rgba(239, 68, 68, 0.1)';
             connBadge.style.color = 'var(--accent-error)';
-            connBadge.style.border = '1px solid rgba(255, 69, 58, 0.3)';
+            connBadge.style.border = '1px solid rgba(239, 68, 68, 0.2)';
         }
 
         const statusSelect = clone.querySelector('.status-select');
