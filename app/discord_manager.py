@@ -15,6 +15,7 @@ class DiscordManager:
         self.tasks: Dict[int, asyncio.Task] = {}
         self.ws_connections: Dict[int, aiohttp.ClientWebSocketResponse] = {}
         self.bot_configs: Dict[int, dict] = {}
+        self.rotator_tasks: Dict[int, asyncio.Task] = {}
         self.subscribers: List[asyncio.Queue] = []
         self.session = None
 
@@ -73,12 +74,95 @@ class DiscordManager:
             del self.tasks[token_id]
         if token_id in self.bot_configs:
             del self.bot_configs[token_id]
+        if token_id in self.rotator_tasks:
+            self.rotator_tasks[token_id].cancel()
+            del self.rotator_tasks[token_id]
         asyncio.create_task(self.broadcast_status())
 
     async def update_bot(self, token_id, encrypted_token, status, guild_id, channel_id, self_mute, self_deaf, join_voice, is_active, activities, rotation_interval, rotate_status, proxy):
-        self.stop_bot(token_id)
-        if is_active and await is_global_active():
-            self.start_bot(token_id, encrypted_token, status, guild_id, channel_id, self_mute, self_deaf, join_voice, is_active, activities, rotation_interval, rotate_status, proxy)
+        old_config = self.bot_configs.get(token_id)
+        token = decrypt_token(encrypted_token)
+        needs_restart = True
+        
+        if old_config and old_config["is_active"] and is_active and await is_global_active():
+            if old_config["token"] == token and old_config["proxy"] == proxy:
+                needs_restart = False
+                
+        if needs_restart:
+            self.stop_bot(token_id)
+            if is_active and await is_global_active():
+                self.start_bot(token_id, encrypted_token, status, guild_id, channel_id, self_mute, self_deaf, join_voice, is_active, activities, rotation_interval, rotate_status, proxy)
+        else:
+            self.bot_configs[token_id].update({
+                "status": status,
+                "guild_id": guild_id,
+                "channel_id": channel_id,
+                "self_mute": bool(self_mute),
+                "self_deaf": bool(self_deaf),
+                "join_voice": bool(join_voice),
+                "activities": activities,
+                "rotation_interval": max(15, rotation_interval),
+                "rotate_status": bool(rotate_status)
+            })
+            
+            ws = self.ws_connections.get(token_id)
+            if ws and not ws.closed:
+                if join_voice and guild_id and channel_id:
+                    asyncio.create_task(ws.send_json({
+                        "op": 4,
+                        "d": {
+                            "guild_id": guild_id,
+                            "channel_id": channel_id,
+                            "self_mute": bool(self_mute),
+                            "self_deaf": bool(self_deaf)
+                        }
+                    }))
+                elif guild_id:
+                    asyncio.create_task(ws.send_json({
+                        "op": 4,
+                        "d": {
+                            "guild_id": guild_id,
+                            "channel_id": None,
+                            "self_mute": False,
+                            "self_deaf": False
+                        }
+                    }))
+                
+                if token_id in self.rotator_tasks:
+                    self.rotator_tasks[token_id].cancel()
+                    del self.rotator_tasks[token_id]
+                
+                if rotate_status and activities and len(activities) > 1:
+                    self.rotator_tasks[token_id] = asyncio.create_task(self.activity_rotator(ws, max(15, rotation_interval), activities, status))
+                else:
+                    act = activities[0] if activities else None
+                    asyncio.create_task(ws.send_json({
+                        "op": 3,
+                        "d": {
+                            "status": status,
+                            "since": 0,
+                            "activities": [act] if act else [],
+                            "afk": False
+                        }
+                    }))
+
+    async def activity_rotator(self, ws, interval, activities, status):
+        try:
+            idx = 0
+            while True:
+                await asyncio.sleep(interval)
+                idx = (idx + 1) % len(activities)
+                await ws.send_json({
+                    "op": 3,
+                    "d": {
+                        "status": status,
+                        "since": 0,
+                        "activities": [activities[idx]],
+                        "afk": False
+                    }
+                })
+        except asyncio.CancelledError:
+            pass
 
     async def run_bot(self, token_id):
         API_VERSION = 10
@@ -156,27 +240,8 @@ class DiscordManager:
 
                     await ws.send_json(identify_payload)
                     
-                    rotator_task = None
                     if config.get("rotate_status") and config.get("activities") and len(config["activities"]) > 1:
-                        async def activity_rotator(ws, interval, activities, status):
-                            try:
-                                idx = 0
-                                while True:
-                                    await asyncio.sleep(interval)
-                                    idx = (idx + 1) % len(activities)
-                                    await ws.send_json({
-                                        "op": 3,
-                                        "d": {
-                                            "status": status,
-                                            "since": 0,
-                                            "activities": [activities[idx]],
-                                            "afk": False
-                                        }
-                                    })
-                            except asyncio.CancelledError:
-                                pass
-                                
-                        rotator_task = asyncio.create_task(activity_rotator(
+                        self.rotator_tasks[token_id] = asyncio.create_task(self.activity_rotator(
                             ws, 
                             config["rotation_interval"], 
                             config["activities"], 
@@ -215,8 +280,9 @@ class DiscordManager:
             except asyncio.CancelledError:
                 if 'hb_task' in locals():
                     hb_task.cancel()
-                if 'rotator_task' in locals() and rotator_task:
-                    rotator_task.cancel()
+                if token_id in self.rotator_tasks:
+                    self.rotator_tasks[token_id].cancel()
+                    del self.rotator_tasks[token_id]
                 logger.info(f"[Bot {token_id}] Task cancelled, stopping...")
                 if token_id in self.ws_connections:
                     del self.ws_connections[token_id]
@@ -227,8 +293,9 @@ class DiscordManager:
                 if token_id in self.ws_connections:
                     del self.ws_connections[token_id]
                 asyncio.create_task(self.broadcast_status())
-                if 'rotator_task' in locals() and rotator_task:
-                    rotator_task.cancel()
+                if token_id in self.rotator_tasks:
+                    self.rotator_tasks[token_id].cancel()
+                    del self.rotator_tasks[token_id]
                 await asyncio.sleep(5)
 
 bot_manager = DiscordManager()
